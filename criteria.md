@@ -29,6 +29,15 @@ tool calls and returns a fit card — in at least 4 of 5 tries.
      "my search is a plain keyword match and some phrasings will miss" is a
      real answer. -->
 
+`search_listings` is a plain keyword match that drops every listing scoring
+zero, and the query is parsed in code before it gets there. A phrasing whose
+words are not in a listing's title, description or tags ("tee shirt" for
+"graphic tee") or whose size or price the parser reads wrongly can come back
+empty even though a matching listing exists. On top of that, the second and
+third tools each call the model, so one failed call in two per run ends the
+run. One miss in five allows for that; two would mean the search or the
+parsing is actually broken.
+
 ---
 
 ## 2. An impossible query stops before the second tool
@@ -40,9 +49,14 @@ Given a query that matches no listings, the agent stops before calling
 <!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
      about this path? -->
 
+This path never reaches the model. Parsing, `search_listings` and the branch
+are all plain code, so the same query gives the same result every time —
+there is nothing random to excuse a miss. If it fails once it fails five
+times, which makes anything below 5 of 5 a bug in the branch, not bad luck.
+
 ---
 
-## 3. Something about state
+## 3. The item that was found is the item that was styled
 
 <!-- YOU WRITE THIS ONE.
 
@@ -54,15 +68,24 @@ Given a query that matches no listings, the agent stops before calling
      compares session["selected_item"] against what actually reached
      suggest_outfit is the shape you're after. -->
 
-
+Given a query that matches at least one listing, three listing ids are the
+same: the `id` of `session["search_results"][0]`, the `id` of
+`session["selected_item"]`, and the `id` of the `new_item` that
+`suggest_outfit` and `create_fit_card` were actually called with, as shown in
+the trace — 5 of 5 tries.
 
 **Why this target:**
 
-
+Choosing the item and handing it on is plain code with no model in it, so it
+cannot be right some of the time: either the loop reads the item back out of
+the session or it doesn't. 5 of 5 is the only honest target. I compare ids
+instead of titles because two listings can have similar titles, and I check
+the tool's real input instead of only the session because a loop can store
+the right item and still pass a different one.
 
 ---
 
-## 4. Something about the fit card
+## 4. The fit card is a postable caption about this item
 
 <!-- YOU WRITE THIS ONE.
 
@@ -75,15 +98,26 @@ Given a query that matches no listings, the agent stops before calling
      sentence? A card longer than a caption anyone would post? Any of those can
      be turned into a number. -->
 
-
+For the same matching query run 5 times, a fit card passes when it is two to
+four sentences long and contains both the selected item's price (the number,
+e.g. "24") and its platform name (e.g. "depop") — at least 4 of 5 cards pass.
+In addition, no two of the 5 cards have the same first sentence.
 
 **Why this target:**
 
-
+The price and the platform are the two facts a reader needs to go and find
+the item, and they are the two things the model is most likely to drop when
+it writes something that sounds like a post. I can check both by searching
+the text, and sentence count by counting. It is 4 of 5 and not 5 of 5 because
+the model writes this at temperature 0.9: it will sometimes run to a fifth
+sentence or write "thrifted" without naming the platform, and the tool does
+not re-check its own output. The first-sentence rule is 5 of 5 because at
+that temperature a repeated opening means the cache is on or the prompt is
+dictating the wording, and either is a fault I can fix.
 
 ---
 
-## 5. Your choice
+## 5. Outfits use pieces the user actually owns
 
 <!-- YOU WRITE THIS ONE TOO.
 
@@ -92,11 +126,20 @@ Given a query that matches no listings, the agent stops before calling
      search respects a price ceiling — anything, as long as it names a number
      or an observable outcome. -->
 
-
+Given a matching query and the example wardrobe, the outfit suggestion
+contains the `name` of at least one wardrobe item (ignoring upper and lower
+case, e.g. "black combat boots") and names no piece as owned that is not in
+the wardrobe — in at least 4 of 5 tries.
 
 **Why this target:**
 
-
+Using the wardrobe is the whole point of `suggest_outfit`; without it the
+user gets advice any search engine could give. The wardrobe goes into the
+prompt, so the model should use it, but it tends to paraphrase ("your combat
+boots" for "Black combat boots") or add a piece the user doesn't have. An
+exact-name check will count a paraphrase as a miss, so I allow one in five.
+I am not loosening it to "mentions something similar" because I couldn't
+score that the same way twice.
 
 ---
 
