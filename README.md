@@ -59,9 +59,9 @@
 
 ### `search_listings`
 
-- **What it does:** Filters the 40 listings in `data/listings.json` by price and size, then ranks what is left by how many of the description's keywords appear in each listing's `title`, `description`, `category`, `style_tags`, `colors` and `brand`. It does not call the model.
+- **What it does:** Filters the 40 listings in `data/listings.json` by price and size, then ranks what is left by how many of the description's keywords appear in each listing's `title`, `description`, `category`, `style_tags`, `colors` and `brand`. Ties go to the listing with more of the keywords in its `title`. It does not call the model.
 - **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-  - `description` (str) — keywords for what the user wants, e.g. `"vintage graphic tee"`. Matched case-insensitively, word by word.
+  - `description` (str) — keywords for what the user wants, e.g. `"vintage graphic tee"`. Matched case-insensitively as whole words, ignoring filler words ("a", "in", "under", "size") and a plural "s", so "sneaker" finds "sneakers".
   - `size` (str or None) — a size to filter by; `None` skips the size filter. A listing matches when the requested size equals one whole token of its `size` field, case-insensitively, after splitting that field on spaces, slashes and brackets. So `"M"` matches `"M"`, `"S/M"` and `"M/L"` but not `"XL"`; `"8"` matches `"US 8"` but not `"US 8.5"`; `"W30"` matches `"W30 L30"`. It is never a substring test.
   - `max_price` (float or None) — price ceiling in dollars, inclusive; `None` skips the price filter.
 - **Returns:** A `list[dict]` of at most `config.SEARCH_RESULT_LIMIT` (10) listings, highest keyword score first. Each dict is a whole listing exactly as it is in the data file: `id` (str), `title` (str), `description` (str), `category` (str), `style_tags` (list of str), `size` (str), `condition` (str), `price` (float), `colors` (list of str), `brand` (str or None — None on 32 of the 40), `platform` (str). Listings with a keyword score of zero are left out.
@@ -128,17 +128,36 @@ $ python app.py ask '...'
 
 ```
 $ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
-
+[{'id': 'lst_006', 'title': 'Graphic Tee — 2003 Tour Bootleg Style', 'description': 'Vintage-style bootleg tee with faded graphic. Slightly boxy fit. 100% cotton, soft and worn-in.', 'category': 'tops', 'style_tags': ['graphic tee', 'vintage', 'grunge', 'streetwear', 'band tee'], 'size': 'L', 'condition': 'good', 'price': 24.0, 'colors': ['black'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_002', 'title': 'Y2K Baby Tee — Butterfly Print', 'description': 'Super cute early 2000s baby tee with butterfly graphic. Fitted crop length. Tag says medium but fits like a small.', 'category': 'tops', 'style_tags': ['y2k', 'vintage', 'graphic tee', 'cottagecore'], 'size': 'S/M', 'condition': 'excellent', 'price': 18.0, 'colors': ['white', 'pink', 'purple'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_033', 'title': 'Vintage Band Tee — Faded Grey', 'description': 'Faded grey band-style tee with distressed graphic. Crew neck. Fits boxy. Well-loved but no holes or major damage.', 'category': 'tops', 'style_tags': ['vintage', 'grunge', 'band tee', 'graphic tee', 'streetwear'], 'size': 'L', 'condition': 'fair', 'price': 19.0, 'colors': ['grey', 'charcoal'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_017', 'title': 'Mesh Long-Sleeve Top — Black', 'description': 'Sheer black mesh long-sleeve. Great for layering under a graphic tee or over a bralette. Stretchy material, fits true to size.', 'category': 'tops', 'style_tags': ['y2k', 'grunge', 'goth', 'layering'], 'size': 'S/M', 'condition': 'excellent', 'price': 15.0, 'colors': ['black'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_015', 'title': 'Vintage Graphic Hoodie — Faded Black', 'description': 'Faded black pullover hoodie with barely-visible vintage graphic on the chest. Cozy interior. Some pilling but adds to the worn-in look.', 'category': 'tops', 'style_tags': ['vintage', 'grunge', 'graphic', 'streetwear'], 'size': 'L', 'condition': 'fair', 'price': 26.0, 'colors': ['black', 'charcoal'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_011', 'title': 'Low-Rise Cargo Pants — Khaki', 'description': 'Y2K era low-rise cargo pants. Lots of pockets. Khaki color, slightly distressed at the hems. Great for layering with a long tee.', 'category': 'bottoms', 'style_tags': ['y2k', 'cargo', '2000s', 'streetwear'], 'size': 'W29', 'condition': 'fair', 'price': 27.0, 'colors': ['khaki', 'tan'], 'brand': None, 'platform': 'poshmark'}, {'id': 'lst_012', 'title': 'Oversized Crewneck Sweatshirt — Vintage Navy', 'description': 'Perfectly faded navy crewneck. Genuinely vintage — not manufactured distressed. Ribbed cuffs and hem. No graphics, clean.', 'category': 'tops', 'style_tags': ['vintage', 'basics', 'oversized', 'classic'], 'size': 'XL (fits oversized)', 'condition': 'good', 'price': 20.0, 'colors': ['navy'], 'brand': None, 'platform': 'thredUp'}]
 ```
 
 ```
-$ python -c "from tools import suggest_outfit; ..."
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
+Outfit one combines the Vintage Levi's 501 Jeans — Medium Wash with the White ribbed tank top, Vintage black denim jacket, and Chunky white sneakers. Add the Black crossbody bag for an easy streetwear look. 
 
+Outfit two pairs the Vintage Levi's 501 Jeans — Medium Wash with the Oversized grey crewneck sweatshirt layered underneath the Vintage black denim jacket. Complete this cozy, classic outfit with the Black combat boots and the Brown leather belt.
 ```
 
 ```
-$ python -c "from tools import create_fit_card; ..."
+$ python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+Just scored these vintage Levi's 501 jeans on Depop for $38 and they have the exact lived-in medium wash I have been searching for everywhere. The slight fading at the knees gives them such an effortless streetwear vibe without feeling worn out. I am definitely living in these with fresh white sneakers all season long.
+```
 
+**The same three with nothing to give**
+
+```
+$ python -c "from tools import search_listings; print(search_listings('designer ballgown', size='XXS', max_price=5))"
+[]
+```
+
+```
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_empty_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_empty_wardrobe()))"
+Grab these classic Levi 501s for sure. For an effortless casual look, pair them with a slightly oversized graphic t-shirt tucked in, a vintage leather belt, and retro white sneakers or chunky loafers. Layer with an unbuttoned flannel or a distressed denim jacket for a cool double-denim moment. Alternatively, dress them up by styling them with a fitted black ribbed turtleneck, a tailored double-breasted blazer in houndstooth or camel, and pointed-toe leather boots. Add a structured secondhand handbag and minimal gold jewelry to elevate the vintage denim into something chic and timeless.
+```
+
+```
+$ python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('   ', load_listings()[0]))"
+No fit card: there was no outfit suggestion to write a caption from.
 ```
 
 ---
