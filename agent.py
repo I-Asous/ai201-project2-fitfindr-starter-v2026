@@ -17,8 +17,9 @@ import re
 
 import config
 import trace
-from tools import search_listings, suggest_outfit, create_fit_card
+from tools import suggest_outfit, create_fit_card
 from generate import ModelUnavailable
+from mcp_client import MCPError, call_tool
 
 
 # ── session state ─────────────────────────────────────────────────────────────
@@ -125,6 +126,24 @@ def _nothing_found_message(parsed: dict) -> str:
     return f"No listings matched {looked_for}. Try {joiner.join(changes)}."
 
 
+def _item_label(item: dict) -> str:
+    """A listing as the trace shows it: the id first, so two runs can be compared."""
+    return f"{item['id']} {item['title']}"
+
+
+def _model_unavailable(session: dict, step_name: str, exc: Exception) -> dict:
+    """End the run with a message, not a stack trace, when the model can't be reached."""
+    item = session["selected_item"]
+    trace.step(step_name, inputs=f"new_item={_item_label(item)}",
+               note=f"model unavailable, stopping: {str(exc).splitlines()[0]}")
+    session["error"] = (
+        f"Found {item['title']} (${item['price']:g} on {item['platform']}), but "
+        f"the model couldn't be reached to style it. Check GEMINI_API_KEY in "
+        f"your .env and try again."
+    )
+    return session
+
+
 # ── planning loop ─────────────────────────────────────────────────────────────
 
 def run_agent(query: str, wardrobe: dict) -> dict:
@@ -197,37 +216,81 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         if "parse_query" not in done:
             session["parsed"] = parse_query(query)
             done.append("parse_query")
+            trace.step("parse_query", inputs=query, returned=str(session["parsed"]))
 
         elif "search_listings" not in done:
             parsed = session["parsed"]
-            session["search_results"] = search_listings(
-                parsed["description"],
-                size=parsed["size"],
-                max_price=parsed["max_price"],
-            )
+            # search_listings lives behind the MCP server now. Same inputs,
+            # same list of listing dicts back.
+            try:
+                session["search_results"] = call_tool("search_listings", {
+                    "description": parsed["description"],
+                    "size": parsed["size"],
+                    "max_price": parsed["max_price"],
+                })
+            except MCPError as exc:
+                trace.step("search_listings (via MCP)", inputs=str(parsed),
+                           note=f"MCP call failed, stopping: {exc}")
+                session["error"] = (
+                    "The listing search couldn't be reached, so nothing was "
+                    "searched. Check that `python mcp_server.py` starts on its "
+                    "own, then try again."
+                )
+                return session
             done.append("search_listings")
 
             # THE BRANCH. Nothing came back, so there is nothing to style:
             # say what to change and stop before suggest_outfit.
-            if not session["search_results"]:
+            empty = not session["search_results"]
+            trace.step(
+                "search_listings (via MCP)",
+                inputs=str(parsed),
+                returned=session["search_results"],
+                note="branch: empty, stopping before suggest_outfit" if empty
+                else "branch: results found, going on to select an item",
+            )
+            if empty:
                 session["error"] = _nothing_found_message(parsed)
                 return session
 
         elif session["selected_item"] is None:
             session["selected_item"] = session["search_results"][0]
             done.append("select_item")
+            trace.step(
+                "select_item",
+                inputs=f"search_results[0] of {len(session['search_results'])}",
+                returned=_item_label(session["selected_item"]),
+            )
 
         elif session["outfit_suggestion"] is None:
-            session["outfit_suggestion"] = suggest_outfit(
-                session["selected_item"], session["wardrobe"]
-            )
+            try:
+                session["outfit_suggestion"] = suggest_outfit(
+                    session["selected_item"], session["wardrobe"]
+                )
+            except ModelUnavailable as exc:
+                return _model_unavailable(session, "suggest_outfit", exc)
             done.append("suggest_outfit")
+            trace.step(
+                "suggest_outfit",
+                inputs=f"new_item={_item_label(session['selected_item'])}, "
+                       f"wardrobe={len(session['wardrobe'].get('items') or [])} items",
+                returned=session["outfit_suggestion"],
+            )
 
         elif session["fit_card"] is None:
-            session["fit_card"] = create_fit_card(
-                session["outfit_suggestion"], session["selected_item"]
-            )
+            try:
+                session["fit_card"] = create_fit_card(
+                    session["outfit_suggestion"], session["selected_item"]
+                )
+            except ModelUnavailable as exc:
+                return _model_unavailable(session, "create_fit_card", exc)
             done.append("create_fit_card")
+            trace.step(
+                "create_fit_card",
+                inputs=f"new_item={_item_label(session['selected_item'])}, "
+                       f"outfit={len(session['outfit_suggestion'])} chars",
+                returned=session["fit_card"],
+            )
 
         else:
             return session

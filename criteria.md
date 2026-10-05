@@ -115,6 +115,19 @@ not re-check its own output. The first-sentence rule is 5 of 5 because at
 that temperature a repeated opening means the cache is on or the prompt is
 dictating the wording, and either is a fault I can fix.
 
+> **Revised in unit 4:** The first part is unchanged (two to four sentences,
+> with the price and the platform, in at least 4 of 5 cards). The second part
+> becomes: no two of the 5 cards begin with the same first five words.
+>
+> **Why revised:** "the same first sentence" turned out not to measure what I
+> meant. In the before run all five cards opened "Scored this … Wrangler
+> denim jacket on Poshmark for $42 and …", and they still counted as five
+> different sentences because an adjective changed further along. Comparing
+> the first five words catches cards that open the same way, and it is still
+> something I can count. This makes the target harder, not easier: the before
+> run, which passed the original wording, has only 3 different openings out
+> of 5 under this one.
+
 ---
 
 ## 5. Outfits use pieces the user actually owns

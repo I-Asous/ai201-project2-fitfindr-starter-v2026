@@ -20,6 +20,7 @@ That last line is what your loop branches on. "Returns a list" earns nothing —
 the description has to say what is *in* the list.
 """
 
+import random
 import re
 
 import config
@@ -249,6 +250,18 @@ def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
 
 NO_OUTFIT_MESSAGE = "No fit card: there was no outfit suggestion to write a caption from."
 
+# What the caption leads with. One is picked at random per card: left to
+# itself the model opens every card "Scored this <item> on <platform> for
+# <price>", and five cards for one item read as the same post.
+_OPENINGS = [
+    "how you are going to wear it",
+    "the one detail that made you buy it",
+    "how long you had been hunting for a piece like this",
+    "the mood or era it puts you in",
+    "a question to your followers about it",
+    "what it replaces or fixes in your closet",
+]
+
 
 def create_fit_card(outfit: str, new_item: dict) -> str:
     """
@@ -300,7 +313,9 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
         f"{_describe_item(new_item)}\n\n"
         "How I'm going to wear it:\n\n"
         f"{outfit.strip()}\n\n"
-        "Write the caption."
+        f"Write the caption. Open with {random.choice(_OPENINGS)}, and do not "
+        "start with the words 'Scored' or 'Just scored'. The price and the "
+        "platform can come later in the caption."
     )
 
     return generate(prompt, system=system).strip()
