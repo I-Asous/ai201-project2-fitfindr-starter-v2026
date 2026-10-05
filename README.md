@@ -105,8 +105,19 @@
 **Where it lives:** `agent.py::run_agent`
 
 **How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+With regular expressions, in `agent.py::parse_query`. No model call. It takes the price ceiling first ("under $30", "below 30", "max $30", or a bare "$30"), then the size ("size M", "in size US 8", "size medium", or a capitalised size on its own such as "XL" or "W29"), and whatever text is left becomes the description. A query with no size or no price gives `None` for that field, which turns that filter off in `search_listings`.
 
 **What moves through the session:** <!-- which fields, in what order -->
+Each time round the loop, `run_agent` looks at the session, runs the one step it is missing, and writes the result back before the next step reads it. In order:
+
+1. `query` and `wardrobe` — set when the session is created.
+2. `parsed` — `{"description", "size", "max_price"}` from `parse_query(query)`.
+3. `search_results` — the list `search_listings` returned for `parsed`. If it is empty, `error` is set and the run ends here.
+4. `selected_item` — `search_results[0]`.
+5. `outfit_suggestion` — what `suggest_outfit(selected_item, wardrobe)` returned.
+6. `fit_card` — what `create_fit_card(outfit_suggestion, selected_item)` returned.
+
+`steps` records the name of each step as it finishes, so a finished session shows how far the run got. `error` stays `None` unless the run ended early. The loop calls `trace.check_iterations` every time round, so it cannot run past `MAX_ITERATIONS`.
 
 ---
 
@@ -120,8 +131,27 @@
 **One full query**
 
 ```
-$ python app.py ask '...'
+$ python app.py ask 'vintage graphic tee under $30'
 
+  Found:    Graphic Tee — 2003 Tour Bootleg Style — $24.0 on depop
+
+  Outfit:   Outfit 1: Channel a grunge streetwear vibe by pairing the Graphic Tee — 2003 Tour Bootleg Style with Baggy straight-leg jeans, dark wash. Add the Black combat boots and the Black crossbody bag to complete the look. 
+
+Outfit 2: For an edgy layered style, wear the Graphic Tee — 2003 Tour Bootleg Style tucked into Wide-leg khaki trousers. Layer the Vintage black denim jacket on top, and finish with Chunky white sneakers.
+
+  Fit card: Scored this sick faded graphic tee on depop for only $24 and the worn-in cotton feels amazing. It has that ultimate boxy grunge look that makes every streetwear fit effortless. Can not wait to style it with baggy denim and beat-up boots.
+
+1 model calls this session, 1 served from cache, 294 prompt + 54 output tokens
+```
+
+And the other side of the branch, a query nothing matches:
+
+```
+$ python app.py ask 'designer ballgown size XXS under $5'
+
+  No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'.
+
+0 model calls this session
 ```
 
 **The three tools, tested one at a time**
@@ -140,7 +170,7 @@ Outfit two pairs the Vintage Levi's 501 Jeans — Medium Wash with the Oversized
 
 ```
 $ python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
-Just scored these vintage Levi's 501 jeans on Depop for $38 and they have the exact lived-in medium wash I have been searching for everywhere. The slight fading at the knees gives them such an effortless streetwear vibe without feeling worn out. I am definitely living in these with fresh white sneakers all season long.
+Scored these vintage Levi's 501 jeans on depop for $38 and they have the ultimate relaxed streetwear vibe. The knee fading makes them look like they have real history already. I cannot wait to style them with a simple pair of fresh white sneakers.
 ```
 
 **The same three with nothing to give**
