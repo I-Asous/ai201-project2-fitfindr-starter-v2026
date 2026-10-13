@@ -458,10 +458,20 @@ $ GEMINI_API_KEY=not-a-real-key AI201_CACHE=0 python app.py ask 'denim jacket un
       in:  new_item=lst_007 Denim Jacket — Light Wash, Cropped
       →    model unavailable, stopping: The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com.
 
-  Found Denim Jacket — Light Wash, Cropped ($42 on poshmark), but the model couldn't be reached to style it. Check GEMINI_API_KEY in your .env and try again.
+  Found Denim Jacket — Light Wash, Cropped ($42 on poshmark), but it couldn't be styled. The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com.
 
 1 model calls this session
 ```
+
+**What the agent said, each time**
+
+| Failure | How I triggered it | What the agent said |
+|---|---|---|
+| Empty search | `'designer ballgown size XXS under $5'` | "No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'." |
+| Empty wardrobe | `'denim jacket under $50' --empty-wardrobe` | No error. It found the denim jacket and gave general advice that names no owned pieces, starting "That vintage Wrangler jacket is a fantastic find for any wardrobe. For a classic casual look, layer it over a fitted black ribbed turtleneck…", then wrote the fit card. |
+| Model unavailable | `GEMINI_API_KEY=not-a-real-key AI201_CACHE=0`, a query that finds listings | "Found Denim Jacket — Light Wash, Cropped ($42 on poshmark), but it couldn't be styled. The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com." |
+
+None of the three crashed or went silent. I changed one message after reading them as a user would. The model-unavailable message used to end "Check GEMINI_API_KEY in your .env and try again" whatever the cause, so a dropped connection or a wrong model name also told the user to check a key that was fine. `agent.py::_model_unavailable` now passes on the reason `generate.py` already works out, so the three causes it tells apart (rejected key, model name that doesn't resolve, no connection) each give a different next step. The files in `results/` were written before this change and still show the old wording.
 
 **On the MCP move:** `search_listings` is the tool I moved. In `mcp_server.py` I registered it with `@mcp.tool()`, with the same three typed inputs as the Tool Inventory (`description: str`, `size: str | None`, `max_price: float | None`) and a description that states the size rule, the units of the price, the fields in each listing and the empty case. In `agent.py::run_agent` the direct call `search_listings(...)` became `call_tool("search_listings", {...})` from `mcp_client.py`, and the trace step is now named `search_listings (via MCP)`.
 

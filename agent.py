@@ -134,12 +134,18 @@ def _item_label(item: dict) -> str:
 def _model_unavailable(session: dict, step_name: str, exc: Exception) -> dict:
     """End the run with a message, not a stack trace, when the model can't be reached."""
     item = session["selected_item"]
+    # generate.py has already worked out why (bad key, wrong model name, no
+    # connection), so pass that on instead of blaming the key every time.
+    reason = str(exc).splitlines()[0]
     trace.step(step_name, inputs=f"new_item={_item_label(item)}",
-               note=f"model unavailable, stopping: {str(exc).splitlines()[0]}")
+               note=f"model unavailable, stopping: {reason}")
+    if len(reason) > 200:
+        reason = reason[:200].rstrip() + "…"
+    if reason.startswith("Couldn't reach the model:"):
+        reason += " Wait a minute and try again."
     session["error"] = (
         f"Found {item['title']} (${item['price']:g} on {item['platform']}), but "
-        f"the model couldn't be reached to style it. Check GEMINI_API_KEY in "
-        f"your .env and try again."
+        f"it couldn't be styled. {reason}"
     )
     return session
 
