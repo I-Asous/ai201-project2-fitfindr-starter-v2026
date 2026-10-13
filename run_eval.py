@@ -2,9 +2,9 @@
 """
 Run your scenarios repeatedly and write the results down. ← UNIT 4
 
-    python run_eval.py --label before      five tries, the default
-    python run_eval.py --label after       after your improvement
-    python run_eval.py --tries 10          more tries
+    python3 run_eval.py --label before     five tries, the default
+    python3 run_eval.py --label after      after your improvement
+    python3 run_eval.py --tries 10         more tries
 
 This does the mechanical half of unit 4 for you. It runs every scenario in
 `scenarios.py` five separate times, **with caching off** so you get five real
