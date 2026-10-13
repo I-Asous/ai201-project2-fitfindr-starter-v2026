@@ -213,6 +213,18 @@ No fit card: there was no outfit suggestion to write a caption from.
 - *What came back:* A working loop, but in the empty-wardrobe test run the fit card for the $45 track jacket read "for forty five dollars". My criterion 4 checks for the price as a number, so that card would have failed it.
 - *What I changed:* The system prompt in `tools.py::create_fit_card` now says to write the price as a dollar figure, like $24, never in words. Every completed card in the eval runs after that had the price as a figure.
 
+**Moment 3 (unit 4)**
+
+- *What I asked for:* I asked Claude to trigger the three failures again (empty search, empty wardrobe, a bad key) and read each message the way a user who can't see the code would.
+- *What came back:* All three were handled, but it pointed out that the model-unavailable message ended "Check GEMINI_API_KEY in your .env and try again" whatever the cause. My first after run had 13 tries fail on the provider's 503 error, and every one of them told the user to check a key that was fine.
+- *What I changed:* `agent.py::_model_unavailable` now passes on the reason `generate.py` already works out, so a rejected key, a dropped connection and a provider error each give a different next step.
+
+**Moment 4 (unit 4)**
+
+- *What I asked for:* I asked Claude to score every try in both saved run logs again, without looking at my verdicts first, and compare.
+- *What came back:* No verdict changed. It did find two gaps in the write-up: the Run Log had pasted output for criterion 3 only, and my criterion 3 verdict rested on a title in the trace where the criterion asks for an id. One sentence it first drafted for the README said four of the five sneaker cards opened the same way; the run log shows three, and it corrected that before it went in.
+- *What I changed:* The README now has real output for all five criteria, the second-pass tables, and a re-run of the search showing `lst_004` is the first result by id. I kept my targets as written, including criterion 5, which the same pass showed was probably set too low.
+
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
      Don't fill these in during unit 3.
