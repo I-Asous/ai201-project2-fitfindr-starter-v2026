@@ -734,11 +734,9 @@ Same six scenarios as the before run, 5 tries each, caching off, in `results/run
 | 4. Different first-five-word openings (revised rule) | 5 of 5 | 3 of 5 | 4 of 5 | Better, still MISSED |
 | 5. Outfits use pieces the user actually owns | 4 of 5 | MET (5/5) | MET (5/5) | Same |
 
-In one sentence: the change helped the openings it was aimed at, from 3 different out of 5 to 4, but not enough to meet the revised target.
-
 This is the second after run. The first, `results/run_2026-10-04_2119_after.md`, lost 13 of its 30 tries to the model provider returning `503 UNAVAILABLE … This model is currently experiencing high demand`, so it could not measure the change. I kept the file and re-ran once the model was answering again. The second run still lost 4 tries to the same error, and those are counted above as they fell.
 
-**Did it help, and how do I know:** Partly. It helped the thing it was aimed at, but not enough to meet the revised target, and a different criterion missed in the same run for an unrelated reason.
+**Did it help, and how do I know:** Partly. The change helped the openings it was aimed at, from 3 different out of 5 to 4, but not enough to meet the revised target. A different criterion also missed in the same run, for an unrelated reason.
 
 - **Criterion 4, the openings:** up from 3 different openings out of 5 to 4 out of 5 on the criterion 4 scenario. The five cards began "Who needs a boring basic", "Those structured shoulders immediately sold", "I had been hunting for", "I had been hunting for" and "Those structured shoulders are everything". None begins with "Scored", where all five did before. It still misses, because tries 3 and 4 share their first five words. The cause is in the change itself: `random.choice` picks one of six openings independently for each card, so five cards will usually repeat at least one, and two cards given "how long you had been hunting" both began "I had been hunting for".
 - **Criterion 4, the rest:** unchanged. All five cards still have three sentences, "$42" and "Poshmark", so moving the price later in the caption did not make the model drop it.
