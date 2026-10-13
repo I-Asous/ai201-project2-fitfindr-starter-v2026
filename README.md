@@ -518,6 +518,23 @@ No criterion was missed, so there is no miss to place in a tool, the branch, the
 
 Each criterion was run on one query taken from the starter's example list, so 5 of 5 everywhere says these five queries work, not that every phrasing does. Criterion 1's reason predicted misses from phrasings the keyword search can't match, and none of these queries tested that.
 
+**The pattern**
+
+Diagnoses 1 and 2 are one problem, not two. Both are fit cards opening the same way, both come from the same prompt in `tools.py::create_fit_card`, and the same thing shows in every scenario that reached a fit card: the track jacket cards all began "Scored this vintage Champion" or "Just scored this vintage Champion", and three of the five sneaker cards began "Scored these chunky white platform sneakers", with a fourth one letter off ("Score these chunky white platform sneakers"). It is the model's output, caused by the prompt, and it is the only pattern in the run. Nothing went wrong in a tool, the branch or the session on any of the 25 tries.
+
+**Were the targets low?**
+
+Nothing was missed, so this needs a plain answer for each one.
+
+- **Criteria 2 and 3** are at 5 of 5 already and came in at 5 of 5. They cannot be set higher.
+- **Criterion 1** is at 4 of 5 and came in at 5 of 5, but I do not think it was low. The allowance was for a model call failing, and that is exactly what happened in the after run, where it scored 2 of 5.
+- **Criterion 4** was too easy, and not because of its number. Its second rule ("no two cards have the same first sentence") passed five cards that all opened the same way. That is a criterion measuring the wrong thing, so I revised it in `criteria.md`, with the original left in place above the revision: no two of the 5 cards may begin with the same first five words. The new rule is harder, and the before run misses it with 3 different openings out of 5.
+- **Criterion 5** is the one I would tighten next. I set 4 of 5 because I expected the model to paraphrase wardrobe names ("your combat boots") and it never did: every outfit in both runs, 10 of 10, named six or seven pieces exactly and invented none. On this evidence the target should be 5 of 5. I have not changed it, because raising a target after seeing the results is still fitting the target to the results.
+
+**Closing the gap in diagnosis 3**
+
+Criterion 3 asks for the id of `search_results[0]`, and the trace only shows its title. To check that the title is enough, I ran the same search again, both directly and through MCP: `search_listings('90s track jacket', 'M', None)` returns ids `lst_004`, `lst_022`, `lst_013`, `lst_032` in that order, and the four titles are all different. So the first title in the trace can only be `lst_004`, which is the id the other two places show. The verdict stays MET. The trace should still print the id, and that is listed under What's Still Broken.
+
 **Second pass over the scoring**
 
 After the table was filled in, every try in both saved run logs was scored a second time from the output in `results/`, with a short script for the parts that can be counted (trace steps, listing ids, sentence count, price and platform in the card, exact wardrobe names, first five words) and by reading the outfits for the part that can't (a piece presented as owned that is not in the wardrobe). No verdict changed.
