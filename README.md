@@ -518,6 +518,32 @@ No criterion was missed, so there is no miss to place in a tool, the branch, the
 
 Each criterion was run on one query taken from the starter's example list, so 5 of 5 everywhere says these five queries work, not that every phrasing does. Criterion 1's reason predicted misses from phrasings the keyword search can't match, and none of these queries tested that.
 
+**Second pass over the scoring**
+
+After the table was filled in, every try in both saved run logs was scored a second time from the output in `results/`, with a short script for the parts that can be counted (trace steps, listing ids, sentence count, price and platform in the card, exact wardrobe names, first five words) and by reading the outfits for the part that can't (a piece presented as owned that is not in the wardrobe). No verdict changed.
+
+Before run, `results/run_2026-10-04_2109_before.md`:
+
+| Criterion | Target | Second pass | What was checked on each try |
+| --------- | ------ | ----------- | ---------------------------- |
+| 1. A matching query completes all three tools | 4 of 5 | 5/5 | `stopped early: no`, five trace steps in order, a fit card of 234 to 326 characters |
+| 2. An impossible query stops before the second tool | 5 of 5 | 5/5 | The trace ends at `search_listings` with `[] (empty)`, there is no `suggest_outfit` step, and the message names the size, the price ceiling and the wording as things to change |
+| 3. The item that was found is the item that was styled | 5 of 5 | 5/5 | `lst_004` is the `select_item` output and the `new_item` of both `suggest_outfit` and `create_fit_card`; the first search result's title matches it |
+| 4. The fit card is a postable caption about this item | 4 of 5, and 5 different first sentences | 5/5, 5 different | 2, 2, 3, 3 and 3 sentences; every card contains "42" and "Poshmark"; under the revised rule, 3 different five-word openings |
+| 5. Outfits use pieces the user actually owns | 4 of 5 | 5/5 | 6 or 7 exact wardrobe names per outfit, and no piece outside the wardrobe presented as owned |
+
+After run, `results/run_2026-10-04_2125_after.md`:
+
+| Criterion | Target | Second pass | What was checked on each try |
+| --------- | ------ | ----------- | ---------------------------- |
+| 1. A matching query completes all three tools | 4 of 5 | 2/5 (FAIL, FAIL, PASS, FAIL, PASS) | Tries 1 and 2 stopped at `suggest_outfit` and try 4 at `create_fit_card`; tries 3 and 5 have five steps and a fit card |
+| 2. An impossible query stops before the second tool | 5 of 5 | 5/5 | Same two-step trace and message as before |
+| 3. The item that was found is the item that was styled | 5 of 5 | 5/5 | `lst_004` in all three places on every try |
+| 4. The fit card is a postable caption about this item | 4 of 5, and (revised) 5 different first-five-word openings | 5/5 cards, 4 different openings | Three sentences, "42" and "Poshmark" in every card; tries 3 and 4 both begin "I had been hunting for" |
+| 5. Outfits use pieces the user actually owns | 4 of 5 | 5/5 | 6 or 7 exact wardrobe names per outfit, and no piece outside the wardrobe presented as owned |
+
+The same pass confirmed the opening counts quoted under The Improvement: the track jacket scenario went from 2 different five-word openings to 5, and the platform sneakers from 3 to 5. It did not close the gap in diagnosis 3: the first search result is still matched by title, because the trace does not print its id.
+
 ---
 
 ## Loop Trace
