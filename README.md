@@ -723,6 +723,19 @@ The run in **Run Log — Before** was taken with the direct call, before this mo
 
 Same six scenarios as the before run, 5 tries each, caching off, in `results/run_2026-10-04_2125_after.md` (48 model calls).
 
+**Before and after, side by side**
+
+| Criterion | Target | Before | After | Change |
+| --------- | ------ | ------ | ----- | ------ |
+| 1. A matching query completes all three tools | 4 of 5 | MET (5/5) | MISSED (2/5) | Worse, from the provider's 503 errors and not from the change |
+| 2. An impossible query stops before the second tool | 5 of 5 | MET (5/5) | MET (5/5) | Same |
+| 3. The item that was found is the item that was styled | 5 of 5 | MET (5/5) | MET (5/5) | Same |
+| 4. Cards with two to four sentences, the price and the platform | 4 of 5 | 5/5 | 5/5 | Same |
+| 4. Different first-five-word openings (revised rule) | 5 of 5 | 3 of 5 | 4 of 5 | Better, still MISSED |
+| 5. Outfits use pieces the user actually owns | 4 of 5 | MET (5/5) | MET (5/5) | Same |
+
+In one sentence: the change helped the openings it was aimed at, from 3 different out of 5 to 4, but not enough to meet the revised target.
+
 This is the second after run. The first, `results/run_2026-10-04_2119_after.md`, lost 13 of its 30 tries to the model provider returning `503 UNAVAILABLE … This model is currently experiencing high demand`, so it could not measure the change. I kept the file and re-ran once the model was answering again. The second run still lost 4 tries to the same error, and those are counted above as they fell.
 
 **Did it help, and how do I know:** Partly. It helped the thing it was aimed at, but not enough to meet the revised target, and a different criterion missed in the same run for an unrelated reason.
