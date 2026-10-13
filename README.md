@@ -253,10 +253,89 @@ The run also included one diagnostic scenario that is not one of the five (`deni
 
 The whole run is in `results/run_2026-10-04_2109_before.md`: 6 scenarios, 5 tries each, caching off, temperature 0.9, 50 model calls. It was taken before `search_listings` was moved onto MCP.
 
-**Real output from one try**, pasted as text, naming the file and function
+**Real output from one try of each criterion**, pasted as text, naming the file and function
 that produced it:
 
-Criterion 3, try 1. Produced by `run_eval.py::main` calling `agent.py::run_agent`; the trace lines come from the `trace.step` calls inside `run_agent`.
+Criterion 1, try 1. Produced by `run_eval.py::main` calling `agent.py::run_agent`; the trace lines come from the `trace.step` calls inside `run_agent`.
+
+```
+### matching query completes
+
+- Query: `vintage graphic tee under $30`
+- Wardrobe: example
+
+**Try 1**
+
+- stopped early: no
+- selected_item: Graphic Tee — 2003 Tour Bootleg Style ($24.0, depop)
+- search_results: 10
+
+Outfit suggestion:
+
+Outfit 1:
+Graphic Tee — 2003 Tour Bootleg Style
+Baggy straight-leg jeans, dark wash
+Vintage black denim jacket
+Black combat boots
+Black crossbody bag
+
+Outfit 2:
+Graphic Tee — 2003 Tour Bootleg Style
+Wide-leg khaki trousers
+Brown leather belt
+Chunky white sneakers
+Black cropped zip hoodie
+
+Fit card:
+
+Scored this perfectly faded 2003 tour bootleg graphic tee on depop for $24. The cotton is already super soft and has that exact broken-in grunge vibe I live for. Can not wait to style this with baggy denim and combat boots for an effortless weekend look.
+
+Trace:
+
+[1] parse_query
+      in:  vintage graphic tee under $30
+      out: {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+[2] search_listings
+      in:  {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+      out: 10 items: Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey, Y2K Baby Tee — Butterfly Print … +7 more
+      →    branch: results found, going on to select an item
+[3] select_item
+      in:  search_results[0] of 10
+      out: lst_006 Graphic Tee — 2003 Tour Bootleg Style
+[4] suggest_outfit
+      in:  new_item=lst_006 Graphic Tee — 2003 Tour Bootleg Style, wardrobe=10 items
+      out: Outfit 1: Graphic Tee — 2003 Tour Bootleg Style Baggy straight-leg jeans, dark wash Vintage black denim jacket…
+[5] create_fit_card
+      in:  new_item=lst_006 Graphic Tee — 2003 Tour Bootleg Style, outfit=288 chars
+      out: Scored this perfectly faded 2003 tour bootleg graphic tee on depop for $24. The cotton is already super soft a…
+```
+
+Criterion 2, try 1. Same file and function. `fit_card` stays `None` and the trace has two steps, because `run_agent` returns at the empty-search branch.
+
+```
+### impossible query stops early
+
+- Query: `designer ballgown size XXS under $5`
+- Wardrobe: example
+
+**Try 1**
+
+- stopped early: yes — No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'.
+- selected_item: (none)
+- search_results: 0
+
+Trace:
+
+[1] parse_query
+      in:  designer ballgown size XXS under $5
+      out: {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+[2] search_listings
+      in:  {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+      out: [] (empty)
+      →    branch: empty, stopping before suggest_outfit
+```
+
+Criterion 3, try 1. Same file and function.
 
 ```
 ### found item is the styled item
@@ -300,6 +379,103 @@ Trace:
 [5] create_fit_card
       in:  new_item=lst_004 90s Track Jacket — Navy/White Stripe, outfit=566 chars
       out: Scored this vintage Champion 90s track jacket on Poshmark and it has the ultimate sporty streetwear vibe. It w…
+```
+
+Criterion 4, try 1. Same file and function. The fit card text comes from `tools.py::create_fit_card`.
+
+```
+### fit card is a postable caption
+
+- Query: `denim jacket under $50`
+- Wardrobe: example
+
+**Try 1**
+
+- stopped early: no
+- selected_item: Denim Jacket — Light Wash, Cropped ($42.0, poshmark)
+- search_results: 7
+
+Outfit suggestion:
+
+Outfit 1:
+Denim Jacket — Light Wash, Cropped
+White ribbed tank top
+Baggy straight-leg jeans, dark wash
+Chunky white sneakers
+Black crossbody bag
+
+Outfit 2:
+Denim Jacket — Light Wash, Cropped
+Oversized grey crewneck sweatshirt
+Wide-leg khaki trousers
+Chunky white sneakers
+
+Fit card:
+
+Scored this vintage Wrangler denim jacket on Poshmark for $42 and the structured shoulders give it the ultimate effortless streetwear vibe. I am obsessed with the light wash and can already tell it is going to be my go-to outerwear piece for throwing over oversized crewnecks all fall.
+
+Trace:
+
+[1] parse_query
+      in:  denim jacket under $50
+      out: {'description': 'denim jacket', 'size': None, 'max_price': 50.0}
+[2] search_listings
+      in:  {'description': 'denim jacket', 'size': None, 'max_price': 50.0}
+      out: 7 items: Denim Jacket — Light Wash, Cropped, 90s Track Jacket — Navy/White Stripe, High-Waisted Denim Shorts — Cutoff … +4 more
+      →    branch: results found, going on to select an item
+[3] select_item
+      in:  search_results[0] of 7
+      out: lst_007 Denim Jacket — Light Wash, Cropped
+[4] suggest_outfit
+      in:  new_item=lst_007 Denim Jacket — Light Wash, Cropped, wardrobe=10 items
+      out: Outfit 1: Denim Jacket — Light Wash, Cropped White ribbed tank top Baggy straight-leg jeans, dark wash Chunky …
+[5] create_fit_card
+      in:  new_item=lst_007 Denim Jacket — Light Wash, Cropped, outfit=271 chars
+      out: Scored this vintage Wrangler denim jacket on Poshmark for $42 and the structured shoulders give it the ultimat…
+```
+
+Criterion 5, try 1. Same file and function. The outfit text comes from `tools.py::suggest_outfit`.
+
+```
+### outfit uses owned pieces
+
+- Query: `platform sneakers size 8`
+- Wardrobe: example
+
+**Try 1**
+
+- stopped early: no
+- selected_item: Platform Sneakers — White Chunky Sole ($48.0, poshmark)
+- search_results: 1
+
+Outfit suggestion:
+
+Outfit one: Pair your Platform Sneakers — White Chunky Sole with the Baggy straight-leg jeans, dark wash and the White ribbed tank top. Layer the Oversized grey crewneck sweatshirt on top and finish with the Black crossbody bag for an effortless streetwear look.
+
+Outfit two: Style the Platform Sneakers — White Chunky Sole with the Wide-leg khaki trousers and the White ribbed tank top. Throw on the Vintage black denim jacket and accessorize with the Brown leather belt for a cool Y2K-inspired casual outfit.
+
+Fit card:
+
+Found these chunky white platform sneakers on Poshmark for $48 and they have the ultimate late 90s streetwear vibe. The little bit of sole yellowing just makes them look authentically vintage instead of brand new. Can not wait to style these with some baggy dark wash denim and a basic white tank.
+
+Trace:
+
+[1] parse_query
+      in:  platform sneakers size 8
+      out: {'description': 'platform sneakers', 'size': '8', 'max_price': None}
+[2] search_listings
+      in:  {'description': 'platform sneakers', 'size': '8', 'max_price': None}
+      out: 1 items: Platform Sneakers — White Chunky Sole
+      →    branch: results found, going on to select an item
+[3] select_item
+      in:  search_results[0] of 1
+      out: lst_019 Platform Sneakers — White Chunky Sole
+[4] suggest_outfit
+      in:  new_item=lst_019 Platform Sneakers — White Chunky Sole, wardrobe=10 items
+      out: Outfit one: Pair your Platform Sneakers — White Chunky Sole with the Baggy straight-leg jeans, dark wash and t…
+[5] create_fit_card
+      in:  new_item=lst_019 Platform Sneakers — White Chunky Sole, outfit=510 chars
+      out: Found these chunky white platform sneakers on Poshmark for $48 and they have the ultimate late 90s streetwear …
 ```
 
 ---
