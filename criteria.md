@@ -210,6 +210,16 @@ D1–D4 were committed before any scored session. D5 was added afterwards
 (see its note), so it is scored only on sessions that started after it was
 committed.
 
+**Which sessions are scored (fixed before they ran):** the "before" result
+set is the three sessions run with `--label before`, saved as
+`results/deploy_before_*`. All five criteria are scored together on exactly
+those three: `python measure.py --score results/deploy_before_*.json`. A
+session that `measure.py` marks NOT COLD is kept in the repo but replaced by
+a re-run, so the set stays three cold sessions. The earlier
+`deploy_hosted_*` and `deploy_trial-*` sessions are trial runs. They stay
+committed and are not scored. The "after" set (Milestone 6) follows the same
+rule with `--label after`.
+
 "Warm" means any `/ask` whose log line has `nth_since_boot` > 1, so it is not
 the first request the process served. "Cold confirmed" means the session's
 first `/ask` has `nth_since_boot` = 1, which proves the instance really
