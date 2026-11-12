@@ -135,7 +135,7 @@ def run_session(base: str, rounds: int) -> dict:
             outcome = client_outcome(status, body)
             item = (body.get("selected_item") or {}) if isinstance(body, dict) else {}
             detail = (f"fit card for {item.get('id')}" if outcome == "complete"
-                      else str(body.get("error") if isinstance(body, dict) else body)[:70])
+                      else str(body.get("error") if isinstance(body, dict) else body)[:400])
             asks.append({
                 "round": r, "name": name, "status": status, "client_ms": ms,
                 "server_agent_ms": agent, "client_outcome": outcome,
