@@ -1,0 +1,112 @@
+Scoring 3 session(s) against criteria.md D1–D5:
+
+  2026-11-12T15:29:49+00:00  https://fitfindr-ha9z.onrender.com
+  2026-11-12T15:55:00+00:00  https://fitfindr-ha9z.onrender.com
+  2026-11-12T16:20:00+00:00  https://fitfindr-ha9z.onrender.com
+
+  D1  INCOMPLETE  0 of 0 cold sessions (3 not cold)         cold start answers within 60 s
+          /health 200 in 42.8 s, server uptime None s at first /ask vs 64.8 s since session start → NOT COLD — doesn't count, re-run after 15 min idle
+          /health 200 in 32.5 s, server uptime None s at first /ask vs 74.0 s since session start → NOT COLD — doesn't count, re-run after 15 min idle
+          /health 200 in 22.3 s, server uptime None s at first /ask vs 39.5 s since session start → NOT COLD — doesn't count, re-run after 15 min idle
+  D2  FAIL  no warm full runs, 5xx=40                 warm full runs: p50 ≤ 8 s, p95 ≤ 75 s, no 5xx
+          warm full-run client ms, sorted: []
+  D3  FAIL  0 of 45                                   one truthful log line per /ask
+          match r1 531691f5230d: 0 log lines
+          match_size r1 None: 0 log lines
+          no_match r1 None: 0 log lines
+          empty_wardrobe r1 None: 0 log lines
+          bad_request r1 None: 0 log lines
+          match r2 None: 0 log lines
+          match_size r2 None: 0 log lines
+          no_match r2 None: 0 log lines
+          empty_wardrobe r2 None: 0 log lines
+          bad_request r2 None: 0 log lines
+          match r3 None: 0 log lines
+          match_size r3 None: 0 log lines
+          no_match r3 None: 0 log lines
+          empty_wardrobe r3 None: 0 log lines
+          bad_request r3 None: 0 log lines
+          match r1 b9c660d7cef2: 0 log lines
+          match_size r1 None: 0 log lines
+          no_match r1 None: 0 log lines
+          empty_wardrobe r1 None: 0 log lines
+          bad_request r1 None: 0 log lines
+          match r2 None: 0 log lines
+          match_size r2 None: 0 log lines
+          no_match r2 None: 0 log lines
+          empty_wardrobe r2 None: 0 log lines
+          bad_request r2 None: 0 log lines
+          match r3 None: 0 log lines
+          match_size r3 None: 0 log lines
+          no_match r3 None: 0 log lines
+          empty_wardrobe r3 None: 0 log lines
+          bad_request r3 None: 0 log lines
+          match r1 23e55d36cd53: 0 log lines
+          match_size r1 50557adf6263: 0 log lines
+          no_match r1 374a98fa34f7: 0 log lines
+          empty_wardrobe r1 None: 0 log lines
+          bad_request r1 None: 0 log lines
+          match r2 None: 0 log lines
+          match_size r2 None: 0 log lines
+          no_match r2 None: 0 log lines
+          empty_wardrobe r2 None: 0 log lines
+          bad_request r2 None: 0 log lines
+          match r3 None: 0 log lines
+          match_size r3 None: 0 log lines
+          no_match r3 None: 0 log lines
+          empty_wardrobe r3 None: 0 log lines
+          bad_request r3 None: 0 log lines
+  D4  FAIL  0 of 3 sessions                           peak memory ≤ 256 MB
+          peak server + MCP child = None MB → FAIL
+          peak server + MCP child = None MB → FAIL
+          peak server + MCP child = None MB → FAIL
+  D5  FAIL  3 eligible session(s); mean None tokens over 0 full runs; calls as expected 0 of 45  full run: mean ≤ 1,000 tokens; calls exactly 2 / 0
+          tokens per full run: []
+          mean agent_ms per full run: None
+          match r1: no log line
+          match_size r1: no log line
+          no_match r1: no log line
+          empty_wardrobe r1: no log line
+          bad_request r1: no log line
+          match r2: no log line
+          match_size r2: no log line
+          no_match r2: no log line
+          empty_wardrobe r2: no log line
+          bad_request r2: no log line
+          match r3: no log line
+          match_size r3: no log line
+          no_match r3: no log line
+          empty_wardrobe r3: no log line
+          bad_request r3: no log line
+          match r1: no log line
+          match_size r1: no log line
+          no_match r1: no log line
+          empty_wardrobe r1: no log line
+          bad_request r1: no log line
+          match r2: no log line
+          match_size r2: no log line
+          no_match r2: no log line
+          empty_wardrobe r2: no log line
+          bad_request r2: no log line
+          match r3: no log line
+          match_size r3: no log line
+          no_match r3: no log line
+          empty_wardrobe r3: no log line
+          bad_request r3: no log line
+          match r1: no log line
+          match_size r1: no log line
+          no_match r1: no log line
+          empty_wardrobe r1: no log line
+          bad_request r1: no log line
+          match r2: no log line
+          match_size r2: no log line
+          no_match r2: no log line
+          empty_wardrobe r2: no log line
+          bad_request r2: no log line
+          match r3: no log line
+          match_size r3: no log line
+          no_match r3: no log line
+          empty_wardrobe r3: no log line
+          bad_request r3: no log line
+
+Paste this into the README as text — or redirect it into a file and commit it.
