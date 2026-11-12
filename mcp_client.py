@@ -29,6 +29,7 @@ right trade for one unit.
 import asyncio
 import json
 import sys
+import time
 from pathlib import Path
 
 SERVER = Path(__file__).parent / "mcp_server.py"
@@ -36,6 +37,12 @@ SERVER = Path(__file__).parent / "mcp_server.py"
 
 class MCPError(RuntimeError):
     """The server couldn't be reached, or it refused the call."""
+
+
+# How long the last call_tool() spent in each phase, in ms: mcp_startup (spawn
+# + handshake + list_tools), tool_call, mcp_teardown (closing the process).
+# Read by agent.py for the latency breakdown. Unit 9 stretch.
+last_timing: dict = {}
 
 
 def call_tool(name: str, arguments: dict):
@@ -55,8 +62,14 @@ def call_tool(name: str, arguments: dict):
     Raises:
         MCPError, with something readable in it.
     """
+    t0 = time.perf_counter()
     try:
-        return asyncio.run(_call(name, arguments))
+        result = asyncio.run(_call(name, arguments))
+        total = (time.perf_counter() - t0) * 1000
+        startup = last_timing.get("mcp_startup", 0.0)
+        call = last_timing.get("tool_call", 0.0)
+        last_timing["mcp_teardown"] = round(total - startup - call, 1)
+        return result
     except MCPError:
         raise
     except Exception as exc:  # noqa: BLE001 — re-raised readably below
@@ -77,11 +90,16 @@ async def _call(name: str, arguments: dict):
         args=[str(SERVER)],
     )
 
+    last_timing.clear()
+    t0 = time.perf_counter()
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
 
             available = {t.name for t in (await session.list_tools()).tools}
+            # Spawning the server process, the MCP handshake and listing the
+            # tools: everything before the tool actually runs. Unit 9 stretch.
+            last_timing["mcp_startup"] = round((time.perf_counter() - t0) * 1000, 1)
             if name not in available:
                 raise MCPError(
                     f"The server doesn't offer a tool called '{name}'.\n"
@@ -89,7 +107,9 @@ async def _call(name: str, arguments: dict):
                     f"Register your tool in mcp_server.py — that's Milestone 1."
                 )
 
+            t1 = time.perf_counter()
             result = await session.call_tool(name, arguments)
+            last_timing["tool_call"] = round((time.perf_counter() - t1) * 1000, 1)
 
             if getattr(result, "isError", False):
                 raise MCPError(f"The tool '{name}' returned an error: {_text(result)}")

@@ -43,6 +43,7 @@ _prompt_tokens = 0
 _output_tokens = 0
 _client = None
 _budget_warned = False
+_pacing_wait_s = 0.0   # unit 9 stretch: time slept by the pacer and backoff
 
 
 class QuotaGuard(Exception):
@@ -118,6 +119,8 @@ def _wait_for_slot() -> None:
                 file=sys.stderr,
                 flush=True,
             )
+        global _pacing_wait_s
+        _pacing_wait_s += sleep_for
         time.sleep(sleep_for)
         _call_times[:] = [t for t in _call_times if time.monotonic() - t < 60.0]
 
@@ -154,6 +157,12 @@ def usage() -> str:
 
 def call_count() -> int:
     return _session_calls
+
+
+def pacing_wait_ms() -> float:
+    """Total time this process has slept waiting for a rate-limit slot or a
+    backoff — time a run spent NOT talking to the model. Unit 9 stretch."""
+    return round(_pacing_wait_s * 1000, 1)
 
 
 def token_counts() -> dict:
@@ -281,7 +290,7 @@ def generate(
     Every call in this course goes through here. If you need to change how the
     model is called, change it in this one place.
     """
-    global _session_calls, _cache_hits
+    global _session_calls, _cache_hits, _pacing_wait_s
 
     use_cache = cache and config.CACHE_ENABLED
     temperature = config.TEMPERATURE if temperature is None else temperature
@@ -338,6 +347,7 @@ def generate(
                 file=sys.stderr,
                 flush=True,
             )
+            _pacing_wait_s += backoff
             time.sleep(backoff)
 
     raise RuntimeError(

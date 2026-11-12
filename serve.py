@@ -168,6 +168,7 @@ def ask():
         # below belongs to this request and nobody else's.
         calls0, hits0 = generate.call_count(), generate._cache_hits
         tokens0 = generate.token_counts()
+        paced0 = generate.pacing_wait_ms()
         agent_started = time.perf_counter()
         try:
             session = run_agent(query, wardrobe)
@@ -176,6 +177,7 @@ def ask():
         agent_ms = _ms_since(agent_started)
         calls1, hits1 = generate.call_count(), generate._cache_hits
         tokens1 = generate.token_counts()
+        paced1 = generate.pacing_wait_ms()
 
     # Outside the lock: building a response and writing the log are not work
     # the next caller should be waiting on.
@@ -199,6 +201,8 @@ def ask():
         "prompt_tokens": tokens1["prompt"] - tokens0["prompt"],
         "output_tokens": tokens1["output"] - tokens0["output"],
         "model_calls_since_boot": calls1,
+        "stage_ms": (session or {}).get("timings_ms"),
+        "pacing_ms": round(paced1 - paced0, 1),
         "error": failure or (session or {}).get("error"),
     })
 

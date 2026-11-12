@@ -14,11 +14,14 @@ Build and test your three tools in `tools.py` first. Then come here.
 """
 
 import re
+import time
+from contextlib import contextmanager
 
 import config
 import trace
 from tools import suggest_outfit, create_fit_card
 from generate import ModelUnavailable
+import mcp_client
 from mcp_client import MCPError, call_tool
 
 
@@ -48,7 +51,19 @@ def new_session(query: str, wardrobe: dict) -> dict:
         "outfit_suggestion": None,   # what suggest_outfit returned
         "fit_card": None,            # what create_fit_card returned
         "error": None,               # set when the run ended early
+        "timings_ms": {},            # unit 9 stretch: ms per stage, measured
     }
+
+
+@contextmanager
+def _timed(session: dict, stage: str):
+    """Record how long a stage took, even if it raises. Timing only — it
+    changes nothing about what the loop does. Unit 9 stretch."""
+    t0 = time.perf_counter()
+    try:
+        yield
+    finally:
+        session["timings_ms"][stage] = round((time.perf_counter() - t0) * 1000, 1)
 
 
 # ── query parsing ─────────────────────────────────────────────────────────────
@@ -220,7 +235,8 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         done = session["steps"]
 
         if "parse_query" not in done:
-            session["parsed"] = parse_query(query)
+            with _timed(session, "parse_query"):
+                session["parsed"] = parse_query(query)
             done.append("parse_query")
             trace.step("parse_query", inputs=query, returned=str(session["parsed"]))
 
@@ -229,11 +245,14 @@ def run_agent(query: str, wardrobe: dict) -> dict:
             # search_listings lives behind the MCP server now. Same inputs,
             # same list of listing dicts back.
             try:
-                session["search_results"] = call_tool("search_listings", {
-                    "description": parsed["description"],
-                    "size": parsed["size"],
-                    "max_price": parsed["max_price"],
-                })
+                with _timed(session, "search_listings"):
+                    session["search_results"] = call_tool("search_listings", {
+                        "description": parsed["description"],
+                        "size": parsed["size"],
+                        "max_price": parsed["max_price"],
+                    })
+                for phase, ms in mcp_client.last_timing.items():
+                    session["timings_ms"][f"search_listings.{phase}"] = ms
             except MCPError as exc:
                 trace.step("search_listings (via MCP)", inputs=str(parsed),
                            note=f"MCP call failed, stopping: {exc}")
@@ -260,7 +279,8 @@ def run_agent(query: str, wardrobe: dict) -> dict:
                 return session
 
         elif session["selected_item"] is None:
-            session["selected_item"] = session["search_results"][0]
+            with _timed(session, "select_item"):
+                session["selected_item"] = session["search_results"][0]
             done.append("select_item")
             trace.step(
                 "select_item",
@@ -270,9 +290,10 @@ def run_agent(query: str, wardrobe: dict) -> dict:
 
         elif session["outfit_suggestion"] is None:
             try:
-                session["outfit_suggestion"] = suggest_outfit(
-                    session["selected_item"], session["wardrobe"]
-                )
+                with _timed(session, "suggest_outfit"):
+                    session["outfit_suggestion"] = suggest_outfit(
+                        session["selected_item"], session["wardrobe"]
+                    )
             except ModelUnavailable as exc:
                 return _model_unavailable(session, "suggest_outfit", exc)
             done.append("suggest_outfit")
@@ -285,9 +306,10 @@ def run_agent(query: str, wardrobe: dict) -> dict:
 
         elif session["fit_card"] is None:
             try:
-                session["fit_card"] = create_fit_card(
-                    session["outfit_suggestion"], session["selected_item"]
-                )
+                with _timed(session, "create_fit_card"):
+                    session["fit_card"] = create_fit_card(
+                        session["outfit_suggestion"], session["selected_item"]
+                    )
             except ModelUnavailable as exc:
                 return _model_unavailable(session, "create_fit_card", exc)
             done.append("create_fit_card")
