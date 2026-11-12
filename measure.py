@@ -2,22 +2,24 @@
 """
 Measure a running FitFindr server from the outside. ← UNIT 9
 
-    python measure.py --url https://fitfindr-xxxx.onrender.com
+    python measure.py --url https://fitfindr-xxxx.onrender.com --rounds 3
     python measure.py --url http://localhost:5000 --label local
+    python measure.py --score results/deploy_hosted_*.json
 
-What it does, in order:
+What one session does, in order:
 
   1. GET /health once and time it. If the instance was asleep, THIS is the
      request that pays for waking it up — the server's own log can't see that
      time, because the server didn't exist yet. So it's measured here.
-  2. POST /ask for each query in QUERIES (a matching one, an impossible one,
-     an empty-wardrobe one, and a bad request), --rounds times over.
+  2. POST /ask for each query in QUERIES, --rounds times over.
   3. GET /stats and GET /logs, so the server's own record comes back with it.
-  4. Writes all of it to results/deploy_<label>_<timestamp>.md.
+  4. Scores the session against criteria D1–D4 (criteria.md) and writes
+     results/deploy_<label>_<timestamp>.md, plus a .json twin with the raw
+     data so several sessions can be scored together with --score.
 
-Commit that file the same session you make it. On a free host the server's
-log is wiped when the instance sleeps; the file in the repo is the record that
-lasts.
+Commit both files the same session you make them. On a free host the server's
+log is wiped when the instance sleeps; the files in the repo are the record
+that lasts.
 
 Standard library only — nothing to install to run it against a deployed app.
 """
@@ -43,6 +45,14 @@ QUERIES = [
     ("bad_request", {"not_query": "oops"}),
 ]
 
+# ── the targets from criteria.md, unit 9. Written before any hosted result. ──
+COLD_HEALTH_MAX_MS = 60_000      # D1
+WARM_P50_MAX_MS = 8_000          # D2
+WARM_P95_MAX_MS = 75_000         # D2
+PEAK_MEMORY_MAX_MB = 256         # D4
+
+
+# ── HTTP ─────────────────────────────────────────────────────────────────────
 
 def call(method: str, url: str, body: dict | None = None, timeout: float = 360):
     """One HTTP call. Returns (status, parsed_json_or_text, client_ms, headers)."""
@@ -58,83 +68,275 @@ def call(method: str, url: str, body: dict | None = None, timeout: float = 360):
     except urllib.error.HTTPError as exc:
         status, raw, headers = exc.code, exc.read(), dict(exc.headers)
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
-        return None, f"{type(exc).__name__}: {exc}", round((time.perf_counter() - t0) * 1000, 1), {}
-    ms = round((time.perf_counter() - t0) * 1000, 1)
+        return None, f"{type(exc).__name__}: {exc}", _ms(t0), {}
+    ms = _ms(t0)
     try:
         return status, json.loads(raw), ms, headers
     except ValueError:
         return status, raw.decode(errors="replace")[:300], ms, headers
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--url", required=True, help="base URL, no trailing /ask")
-    ap.add_argument("--rounds", type=int, default=1, help="times through QUERIES")
-    ap.add_argument("--label", default="hosted")
-    args = ap.parse_args()
-    base = args.url.rstrip("/")
+def _ms(t0: float) -> float:
+    return round((time.perf_counter() - t0) * 1000, 1)
 
-    started = datetime.now(timezone.utc)
-    rows = []
 
+def client_outcome(status, body) -> str:
+    """
+    The outcome as the CLIENT sees it — the same rules as serve._outcome(),
+    applied to what came back over the wire. D3 compares this against the
+    outcome the server logged.
+    """
+    if status is None:
+        return "no_response"
+    if status == 400:
+        return "bad_request"
+    if status >= 500 or not isinstance(body, dict):
+        return "server_error"
+    if not body.get("error"):
+        return "complete"
+    if "search_listings" not in (body.get("steps") or []):
+        return "mcp_error"
+    if not body.get("search_results"):
+        return "no_match"
+    return "model_unavailable"
+
+
+# ── one session ──────────────────────────────────────────────────────────────
+
+def run_session(base: str, rounds: int) -> dict:
     print(f"GET {base}/health  (may take ~a minute if the instance is asleep)")
     status, body, ms, _ = call("GET", f"{base}/health", timeout=180)
-    rows.append({"round": 0, "name": "health (wake)", "status": status, "client_ms": ms,
-                 "server_total_ms": None, "outcome": body.get("status") if isinstance(body, dict) else body,
-                 "request_id": None})
+    health = {"status": status, "client_ms": ms}
     print(f"  {status}  {ms:.0f} ms")
 
-    for r in range(1, args.rounds + 1):
+    asks = []
+    for r in range(1, rounds + 1):
         for name, payload in QUERIES:
             status, body, ms, headers = call("POST", f"{base}/ask", payload)
-            rid = headers.get("X-Request-Id")
-            timing = headers.get("Server-Timing", "")
             agent = None
-            for part in timing.split(","):
+            for part in headers.get("Server-Timing", "").split(","):
                 if part.strip().startswith("agent;dur="):
                     agent = float(part.split("=")[1])
-            if isinstance(body, dict):
-                if body.get("error"):
-                    outcome = "error: " + str(body["error"])[:70]
-                else:
-                    item = body.get("selected_item") or {}
-                    outcome = f"fit card for {item.get('id')}"
-            else:
-                outcome = str(body)[:80]
-            rows.append({"round": r, "name": name, "status": status, "client_ms": ms,
-                         "server_agent_ms": agent, "outcome": outcome, "request_id": rid})
-            print(f"  [{r}] {name:<15} {status}  client {ms:>8.0f} ms   agent {agent or '-':>8} ms   {outcome}")
+            outcome = client_outcome(status, body)
+            item = (body.get("selected_item") or {}) if isinstance(body, dict) else {}
+            detail = (f"fit card for {item.get('id')}" if outcome == "complete"
+                      else str(body.get("error") if isinstance(body, dict) else body)[:70])
+            asks.append({
+                "round": r, "name": name, "status": status, "client_ms": ms,
+                "server_agent_ms": agent, "client_outcome": outcome,
+                "detail": detail, "request_id": headers.get("X-Request-Id"),
+            })
+            print(f"  [{r}] {name:<15} {status}  client {ms:>8.0f} ms   "
+                  f"agent {agent if agent is not None else '-':>8} ms   {outcome}")
 
     _, stats, _, _ = call("GET", f"{base}/stats")
     _, logs, _, _ = call("GET", f"{base}/logs?n=200")
+    return {
+        "url": base,
+        "rounds": rounds,
+        "health": health,
+        "asks": asks,
+        "stats": stats if isinstance(stats, dict) else {"unavailable": str(stats)},
+        "logs": logs if isinstance(logs, list) else [],
+    }
 
+
+# ── scoring against criteria.md D1–D4 ────────────────────────────────────────
+
+def _pct(values: list[float], p: float) -> float | None:
+    """Nearest-rank percentile, the same definition request_log.py uses."""
+    if not values:
+        return None
+    ordered = sorted(values)
+    return ordered[max(1, round(p / 100 * len(ordered))) - 1]
+
+
+def _join(session: dict) -> list[tuple[dict, list[dict]]]:
+    """Each /ask paired with every server log line carrying its request_id."""
+    by_id: dict[str, list[dict]] = {}
+    for line in session["logs"]:
+        by_id.setdefault(line.get("request_id"), []).append(line)
+    return [(a, by_id.get(a["request_id"], []) if a["request_id"] else [])
+            for a in session["asks"]]
+
+
+def score(sessions: list[dict]) -> list[dict]:
+    """One result per criterion, over however many sessions are passed in."""
+    results = []
+
+    # D1 — cold start
+    cold_rows, d1_pass = [], 0
+    for s in sessions:
+        pairs = _join(s)
+        first_lines = pairs[0][1] if pairs else []
+        nth = first_lines[0].get("nth_since_boot") if first_lines else None
+        ok = (s["health"]["status"] == 200
+              and s["health"]["client_ms"] <= COLD_HEALTH_MAX_MS
+              and nth == 1)
+        d1_pass += ok
+        cold_rows.append(f"/health {s['health']['status']} in "
+                         f"{s['health']['client_ms'] / 1000:.1f} s, first /ask "
+                         f"nth_since_boot={nth} → {'PASS' if ok else 'FAIL'}")
+    results.append({
+        "id": "D1", "name": "cold start answers within 60 s",
+        "measured": f"{d1_pass} of {len(sessions)} sessions",
+        "verdict": "PASS" if d1_pass == len(sessions) else "FAIL",
+        "detail": cold_rows,
+    })
+
+    # D2 — warm full-run latency
+    warm, any_5xx = [], 0
+    for s in sessions:
+        for ask, lines in _join(s):
+            if ask["status"] is not None and ask["status"] >= 500:
+                any_5xx += 1
+            if ask["client_outcome"] != "complete" or not lines:
+                continue
+            if lines[0].get("nth_since_boot", 1) > 1:
+                warm.append(ask["client_ms"])
+    p50, p95 = _pct(warm, 50), _pct(warm, 95)
+    d2_ok = (p50 is not None and p50 <= WARM_P50_MAX_MS
+             and p95 <= WARM_P95_MAX_MS and any_5xx == 0)
+    results.append({
+        "id": "D2", "name": "warm full runs: p50 ≤ 8 s, p95 ≤ 75 s, no 5xx",
+        "measured": (f"n={len(warm)}, p50={p50 / 1000:.1f} s, p95={p95 / 1000:.1f} s, "
+                     f"5xx={any_5xx}") if warm else f"no warm full runs, 5xx={any_5xx}",
+        "verdict": "PASS" if d2_ok else "FAIL",
+        "detail": [f"warm full-run client ms, sorted: {sorted(warm)}"],
+    })
+
+    # D3 — exactly one truthful log line per request
+    total, good, misses = 0, 0, []
+    for s in sessions:
+        for ask, lines in _join(s):
+            total += 1
+            if len(lines) != 1:
+                misses.append(f"{ask['name']} r{ask['round']} {ask['request_id']}: "
+                              f"{len(lines)} log lines")
+            elif lines[0].get("outcome") != ask["client_outcome"]:
+                misses.append(f"{ask['name']} r{ask['round']} {ask['request_id']}: "
+                              f"logged {lines[0].get('outcome')!r}, client saw "
+                              f"{ask['client_outcome']!r}")
+            else:
+                good += 1
+    results.append({
+        "id": "D3", "name": "one truthful log line per /ask",
+        "measured": f"{good} of {total}",
+        "verdict": "PASS" if total and good == total else "FAIL",
+        "detail": misses or ["every request matched"],
+    })
+
+    # D4 — peak memory
+    mem_rows, d4_pass = [], 0
+    for s in sessions:
+        peaks = [(l.get("peak_rss_mb") or 0) + (l.get("children_peak_rss_mb") or 0)
+                 for _, lines in _join(s) for l in lines]
+        peak = max(peaks) if peaks else None
+        ok = peak is not None and peak <= PEAK_MEMORY_MAX_MB
+        d4_pass += ok
+        mem_rows.append(f"peak server + MCP child = {peak} MB → {'PASS' if ok else 'FAIL'}")
+    results.append({
+        "id": "D4", "name": "peak memory ≤ 256 MB",
+        "measured": f"{d4_pass} of {len(sessions)} sessions",
+        "verdict": "PASS" if d4_pass == len(sessions) else "FAIL",
+        "detail": mem_rows,
+    })
+    return results
+
+
+def _write_scores(f, results: list[dict]) -> None:
+    f.write("| criterion | target | measured | verdict |\n|---|---|---|---|\n")
+    for r in results:
+        f.write(f"| {r['id']} | {r['name']} | {r['measured']} | **{r['verdict']}** |\n")
+    f.write("\n")
+    for r in results:
+        f.write(f"- **{r['id']}**: " + "; ".join(r["detail"]) + "\n")
+    f.write("\n")
+
+
+# ── writing it down ──────────────────────────────────────────────────────────
+
+def write_record(session: dict, label: str, started: datetime) -> Path:
     RESULTS.mkdir(exist_ok=True)
-    out = RESULTS / f"deploy_{args.label}_{started.strftime('%Y-%m-%d_%H%M')}.md"
-    with out.open("w", encoding="utf-8") as f:
-        f.write(f"# Deploy run — {args.label}\n\n")
-        f.write(f"- URL: {base}\n- Started: {started.isoformat(timespec='seconds')}\n")
-        f.write(f"- Rounds: {args.rounds}\n- Python: {sys.version.split()[0]} (client)\n\n")
-        f.write("## Client view\n\n")
-        f.write("`client_ms` is the full round trip seen from here, including any wake-up "
-                "and network time. `server_agent_ms` is time inside `run_agent()` from the "
-                "`Server-Timing` header.\n\n")
-        f.write("| round | request | status | client_ms | server_agent_ms | outcome | request_id |\n")
-        f.write("|---|---|---|---|---|---|---|\n")
-        for row in rows:
-            f.write(f"| {row['round']} | {row['name']} | {row['status']} | {row['client_ms']} | "
-                    f"{row.get('server_agent_ms') or ''} | {row['outcome']} | {row['request_id'] or ''} |\n")
-        f.write("\n## Server `/stats`\n\n```json\n")
-        f.write(json.dumps(stats, indent=2, ensure_ascii=False) if not isinstance(stats, str) else stats)
-        f.write("\n```\n\n## Server structured log (`/logs`)\n\nOne JSON object per request, "
-                "as written by `request_log.py`.\n\n```jsonl\n")
-        if isinstance(logs, list):
-            for line in logs:
-                f.write(json.dumps(line, ensure_ascii=False) + "\n")
-        else:
-            f.write(str(logs) + "\n")
-        f.write("```\n")
+    stem = RESULTS / f"deploy_{label}_{started.strftime('%Y-%m-%d_%H%M%S')}"
+    md, js = stem.with_suffix(".md"), stem.with_suffix(".json")
 
-    print(f"\nWrote {out.relative_to(Path(__file__).parent)} — commit it now.")
+    session["label"], session["started"] = label, started.isoformat(timespec="seconds")
+    js.write_text(json.dumps(session, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    with md.open("w", encoding="utf-8") as f:
+        f.write(f"# Deploy run — {label}\n\n")
+        f.write(f"- URL: {session['url']}\n- Started: {session['started']}\n")
+        f.write(f"- Rounds: {session['rounds']}\n- Server commit: "
+                f"{session['stats'].get('commit')}\n- Raw data: `{js.name}`\n\n")
+
+        f.write("## Criteria D1–D4, this session alone\n\n")
+        f.write("The criteria are defined over 3 sessions. Score them together with "
+                "`python measure.py --score results/deploy_hosted_*.json`.\n\n")
+        _write_scores(f, score([session]))
+
+        f.write("## Client view\n\n")
+        f.write(f"`GET /health` (wake-up): status {session['health']['status']}, "
+                f"{session['health']['client_ms']} ms\n\n")
+        f.write("`client_ms` is the full round trip seen from here, including network "
+                "time. `server_agent_ms` is time inside `run_agent()`, from the "
+                "`Server-Timing` header.\n\n")
+        f.write("| round | request | status | client_ms | server_agent_ms | outcome | detail | request_id |\n")
+        f.write("|---|---|---|---|---|---|---|---|\n")
+        for a in session["asks"]:
+            detail = str(a["detail"]).replace("|", "\\|")
+            f.write(f"| {a['round']} | {a['name']} | {a['status']} | {a['client_ms']} | "
+                    f"{a['server_agent_ms'] if a['server_agent_ms'] is not None else ''} | "
+                    f"{a['client_outcome']} | {detail} | {a['request_id'] or ''} |\n")
+
+        f.write("\n## Server `/stats`\n\n```json\n")
+        f.write(json.dumps(session["stats"], indent=2, ensure_ascii=False))
+        f.write("\n```\n\n## Server structured log (`/logs`)\n\nOne JSON object per "
+                "request, as written by `request_log.py`.\n\n```jsonl\n")
+        for line in session["logs"]:
+            f.write(json.dumps(line, ensure_ascii=False) + "\n")
+        f.write("```\n")
+    return md
+
+
+def score_files(paths: list[str]) -> int:
+    sessions = [json.loads(Path(p).read_text(encoding="utf-8")) for p in paths]
+    print(f"Scoring {len(sessions)} session(s) against criteria.md D1–D4:\n")
+    for s in sessions:
+        print(f"  {s.get('started')}  {s.get('url')}")
+    print()
+    results = score(sessions)
+    for r in results:
+        print(f"  {r['id']}  {r['verdict']:<4}  {r['measured']:<40}  {r['name']}")
+        for d in r["detail"]:
+            print(f"          {d}")
+    print("\nPaste this into the README as text — or redirect it into a file "
+          "and commit it.")
+    return 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--url", help="base URL, no trailing /ask")
+    ap.add_argument("--rounds", type=int, default=3, help="times through QUERIES")
+    ap.add_argument("--label", default="hosted")
+    ap.add_argument("--score", nargs="+", metavar="JSON",
+                    help="score saved sessions together instead of running one")
+    args = ap.parse_args()
+
+    if args.score:
+        return score_files(args.score)
+    if not args.url:
+        ap.error("--url is required unless you pass --score")
+
+    started = datetime.now(timezone.utc)
+    session = run_session(args.url.rstrip("/"), args.rounds)
+    out = write_record(session, args.label, started)
+
+    print()
+    for r in score([session]):
+        print(f"  {r['id']}  {r['verdict']:<4}  {r['measured']}")
+    print(f"\nWrote {out.relative_to(Path(__file__).parent)} and its .json — commit both now.")
     return 0
 
 

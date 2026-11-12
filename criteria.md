@@ -187,3 +187,117 @@ score that the same way twice.
      A number you missed stays where it is, gets diagnosed, and gets a fix
      attempted. That's where the points are.
      ───────────────────────────────────────────────────────────────────────── -->
+
+---
+
+<!-- ═══════════════════ UNIT 9 — DEPLOY AND INSTRUMENT ═══════════════════ -->
+
+# Deployment criteria — unit 9 (shape A, hosted on Render)
+
+Written **before** the first hosted measurement. Each one is scored from the
+committed run records in `results/deploy_hosted_*.md`, which `measure.py`
+writes. The sessions are defined up front, so the denominators can't drift:
+
+- **3 sessions**, each started after at least 15 minutes with no traffic, so
+  each one begins with Render waking a sleeping instance.
+- Each session is `python measure.py --url <service> --rounds 3`: one
+  `GET /health`, then 5 requests × 3 rounds = **15 `/ask` requests**. Of
+  those, 9 are full runs (two matching queries and one with an empty
+  wardrobe), 3 have no match and 3 are bad requests.
+- Across all 3 sessions: 3 cold starts, **45 `/ask` requests**, 27 full runs.
+
+"Warm" means any `/ask` whose log line has `nth_since_boot` > 1, so it is not
+the first request the process served. "Cold confirmed" means the session's
+first `/ask` has `nth_since_boot` = 1, which proves the instance really
+restarted. `/health` isn't logged, so it doesn't count toward
+`nth_since_boot`.
+
+---
+
+## D1. A cold start answers within a minute
+
+In each session, the first `GET /health` returns 200 within **60 s** measured
+from the client, and that session's first `/ask` has `nth_since_boot` = 1 —
+**3 of 3 sessions**.
+
+**Why this target:**
+
+The client measures this because the server can't. While Render is waking
+the instance, my process doesn't exist yet, so `request_log.py` has nothing
+to time. Render describes the free-tier spin-up as about a minute. On top of
+that, my boot only imports Flask, `google-genai` and my own modules, and
+`data/listings.json` holds just 40 listings. Nothing loads a model and nothing
+reads a large file. So anything over 60 s would come from my import path, not
+from the platform, and that's worth knowing. It's 3 of 3, not 2 of 3,
+because there are only three cold starts to look at. If one of them is over
+a minute, a user hits that wait one time in three. The `nth_since_boot` check
+is there so a session where the instance never actually slept can't pass as
+a fast cold start.
+
+---
+
+## D2. Warm full runs are fast at the median and bounded at the tail
+
+Across the 27 full runs (outcome `complete`), counting only warm ones, the
+client-side round trip has **p50 ≤ 8 s** and **p95 ≤ 75 s**, and none
+returns 5xx.
+
+**Why this target:**
+
+On my laptop a full run took about 2.2 s: one MCP subprocess spawn for
+`search_listings` plus two model calls. The model calls wait on the network,
+so Render shouldn't change them much. Spawning the MCP subprocess starts a
+whole new Python interpreter that imports `mcp`, and that work is CPU-bound.
+The free tier's 0.1 CPU could make it close to ten times slower than on my
+laptop. 8 s covers that and still fails if something else is slow.
+
+The tail target is set by `generate.py`, not by the hosting. A session sends
+18 model calls in roughly a minute, and `generate.py` paces at 15 a minute,
+so I expect about one run per session to wait out the rest of the minute
+(up to ~60 s). With 27 runs, p95 is the 26th slowest, so the 3 expected
+pacing waits are inside it. 75 s allows exactly one pacing wait per run.
+A run that waited twice, or one that got a 429 the pacing should have
+prevented, would go past it. The no-5xx part checks that `--timeout 300` does
+its job: gunicorn's default 30 s would have killed exactly the runs that
+were waiting.
+
+---
+
+## D3. Every request leaves exactly one log line, and the line tells the truth
+
+Each of the 45 `/ask` requests has **exactly one** line in `/logs` with the
+same `request_id` as its `X-Request-Id` header. That line's `outcome` agrees
+with what the client got back (`complete`, `no_match`, `bad_request`, ...) —
+**45 of 45**.
+
+**Why this target:**
+
+The log line is written by code on the response path. No model is involved
+and nothing in it is random, so it can't be right only some of the time.
+Anything short of 45 of 45 is a bug. A run that crashed might log the wrong
+outcome, or none, which is exactly when I'd need the log. The one realistic
+way to lose a line is outside my code: if gunicorn kills a worker or Render
+restarts the instance mid-session, the request gets no response and
+`/logs` loses its memory. I'm counting that as a miss on purpose, because a
+log that disappears when the instance restarts is the failure this criterion
+is meant to catch. The agreement check is there because one line per request
+is easy to get. A line with `outcome: complete` on a request that actually
+failed is worse than no line at all.
+
+---
+
+## D4. Peak memory stays under half the plan
+
+In every session, the highest `peak_rss_mb + children_peak_rss_mb` among
+that session's log lines is **≤ 256 MB** — **3 of 3 sessions**.
+
+**Why this target:**
+
+The free plan has 512 MB. Locally, the server peaked at about 101 MB and the
+MCP subprocess at about 58 MB, 159 MB in total. Python on Linux can come out
+somewhat higher. 256 MB is half the plan, and I chose half for a reason:
+`serve.py`'s lock is the only thing that stops two agent runs, and two MCP
+subprocesses, from running at once. If the lock ever failed, a second copy
+of the work would still fit under 512 MB rather than getting the instance
+OOM-killed. The children figure is the largest single MCP subprocess, not a
+sum. That's correct here because the lock means only one runs at a time.
