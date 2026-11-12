@@ -1,0 +1,167 @@
+{
+  "url": "https://fitfindr-ha9z.onrender.com",
+  "rounds": 3,
+  "health": {
+    "status": 200,
+    "client_ms": 42816.8
+  },
+  "first_ask_elapsed_s": 64.8,
+  "asks": [
+    {
+      "round": 1,
+      "name": "match",
+      "status": 200,
+      "client_ms": 22016.0,
+      "server_agent_ms": 21695.9,
+      "client_outcome": "complete",
+      "detail": "fit card for lst_006",
+      "request_id": "531691f5230d"
+    },
+    {
+      "round": 1,
+      "name": "match_size",
+      "status": 502,
+      "client_ms": 66828.1,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "",
+      "request_id": null
+    },
+    {
+      "round": 1,
+      "name": "no_match",
+      "status": 502,
+      "client_ms": 493.7,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 1,
+      "name": "empty_wardrobe",
+      "status": 502,
+      "client_ms": 729.1,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 1,
+      "name": "bad_request",
+      "status": 502,
+      "client_ms": 321.1,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "match",
+      "status": 502,
+      "client_ms": 624.6,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "match_size",
+      "status": 502,
+      "client_ms": 225.5,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "no_match",
+      "status": 502,
+      "client_ms": 211.0,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "empty_wardrobe",
+      "status": 502,
+      "client_ms": 306.2,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "bad_request",
+      "status": 502,
+      "client_ms": 192.2,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "match",
+      "status": 502,
+      "client_ms": 348.1,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "match_size",
+      "status": 502,
+      "client_ms": 289.2,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "no_match",
+      "status": 502,
+      "client_ms": 531.8,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "empty_wardrobe",
+      "status": 502,
+      "client_ms": 212.0,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "bad_request",
+      "status": 502,
+      "client_ms": 180.4,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    }
+  ],
+  "stats": {
+    "unavailable": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <title>502</title>\n    <style>@font-face {\n  font-family: \"Roobert\";\n  font-weight: 500;\n  font-style: normal;\n  font-stretch: normal;\n  src: url(\"data:fo"
+  },
+  "logs": [],
+  "label": "before",
+  "started": "2026-11-12T15:29:49+00:00"
+}
