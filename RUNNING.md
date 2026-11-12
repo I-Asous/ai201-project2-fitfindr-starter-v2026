@@ -171,7 +171,7 @@ after ~15 min idle), Oregon region, built from [`render.yaml`](render.yaml).
 exist; see the top of this file):
 
 ```bash
-AI201_CACHE=0 gunicorn serve:app --workers 1 --timeout 300 --bind 0.0.0.0:5000
+AI201_CACHE=0 gunicorn serve:app --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:5000
 ```
 
 **To deploy your own copy:**
@@ -192,11 +192,13 @@ curl -X POST https://<your-service>.onrender.com/ask \
 The exact start command Render runs (from `render.yaml`):
 
 ```bash
-gunicorn serve:app --workers 1 --timeout 300 --bind 0.0.0.0:$PORT
+gunicorn serve:app --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:$PORT
 ```
 
 `--workers 1` keeps the one-at-a-time lock meaningful (it only works inside one
-process). `--timeout 300` is there because gunicorn's default 30s kills a worker
+process). `--threads 4` lets `/health` answer while an `/ask` runs. Without it, Render's
+health check queues behind the agent and Render restarts the instance mid-run
+(the unit 9 before results). `--timeout 300` is there because gunicorn's default 30s kills a worker
 that is waiting out the model's per-minute limit. `render.yaml` also sets
 `PYTHON_VERSION=3.13.0` and `AI201_CACHE=0`.
 

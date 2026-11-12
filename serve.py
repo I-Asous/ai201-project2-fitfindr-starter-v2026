@@ -93,7 +93,10 @@ app.json.sort_keys = False
 # called from a running event loop" — not some of them under load, all of
 # them, every time, in a place your laptop never showed you.
 #
-#     gunicorn serve:app              ← right: the DEFAULT sync worker
+#     gunicorn serve:app              ← works: the DEFAULT sync worker
+#     gunicorn serve:app --threads 4  ← what render.yaml runs: threads, no
+#                                       event loop, so MCP works, and /health
+#                                       answers while an /ask runs (unit 9)
 #     gunicorn -k gevent serve:app    ← breaks every MCP call you make
 
 _one_at_a_time = threading.Lock()

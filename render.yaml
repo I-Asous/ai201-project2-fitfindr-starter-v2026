@@ -8,9 +8,17 @@
 #   --workers 1        serve.py's one-at-a-time lock only works inside ONE
 #                      process. Two workers = two locks = two agent runs and
 #                      two MCP subprocesses at once in 512 MB.
-#   (no -k ...)        the default SYNC worker. An async worker (gevent,
-#                      eventlet) breaks every MCP call: asyncio.run() refuses
-#                      to start inside a running event loop. See serve.py.
+#   --threads 4        the gthread worker: one process, four threads. Added
+#                      as the unit 9 improvement. With the plain sync worker,
+#                      Render's health check to /health queued behind every
+#                      running /ask, timed out, and Render killed the
+#                      instance mid-session (results/deploy_before_*). Now
+#                      /health answers on a free thread. serve.py's lock still
+#                      allows ONE agent run at a time, so memory and pacing
+#                      are unchanged. Threads, not async: an async worker
+#                      (gevent, eventlet) still breaks every MCP call, because
+#                      asyncio.run() refuses to start inside a running event
+#                      loop. A plain thread has no loop running.
 #   --timeout 300      gunicorn kills a worker silent for 30s by default. One
 #                      agent run makes two model calls, and generate.py's
 #                      pacing can wait up to ~65s per call when the per-minute
@@ -25,7 +33,7 @@ services:
     plan: free
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn serve:app --workers 1 --timeout 300 --bind 0.0.0.0:$PORT
+    startCommand: gunicorn serve:app --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:$PORT
     healthCheckPath: /health
     autoDeploy: true
     envVars:

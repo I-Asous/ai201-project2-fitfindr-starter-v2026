@@ -938,8 +938,32 @@ Per criterion:
 
 ## Unit 9 — The Improvement
 
-<!-- One change, the after sessions (--label after), and both result sets
-     side by side. -->
+**One change, one line:** the start command in `render.yaml` goes from
+
+    gunicorn serve:app --workers 1 --timeout 300 --bind 0.0.0.0:$PORT
+
+to
+
+    gunicorn serve:app --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:$PORT
+
+That's still one process, so `serve.py`'s lock still allows one agent run at
+a time, and memory and the model pacing are unchanged. Four threads means a
+`/health` check no longer waits behind a running `/ask`. These are threads,
+not an async worker, so `mcp_client`'s `asyncio.run()` still works.
+
+**Tested locally before deploying**, same start command: `/health` took
+**0.0015 s while two `/ask` requests were in flight** (2.94 s before the
+change), and the second `/ask` still logged
+`[serve] another request is still running`, so the lock held.
+
+**Something else the local test turned up, which this change does NOT fix:**
+`gemini-3.5-flash-lite` was answering with `503 UNAVAILABLE: This model is
+currently experiencing high demand`, after one call had already waited 47 s.
+That is outside this system. It most likely explains today's 17–42 s runs
+and session 3's `model_unavailable`, and it will affect the after sessions
+too.
+
+<!-- After set: results/deploy_after_*, scored side by side below. -->
 
 ## Unit 9 — What's Left
 
