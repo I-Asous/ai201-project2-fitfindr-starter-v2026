@@ -70,6 +70,10 @@ def call(method: str, url: str, body: dict | None = None, timeout: float = 360):
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         return None, f"{type(exc).__name__}: {exc}", _ms(t0), {}
     ms = _ms(t0)
+    # HTTP/2 (Render, behind Cloudflare) sends header names in lowercase;
+    # HTTP/1.1 locally keeps Flask's capitals. Lowercase them all so the
+    # lookups below work either way.
+    headers = {k.lower(): v for k, v in headers.items()}
     try:
         return status, json.loads(raw), ms, headers
     except ValueError:
@@ -104,6 +108,8 @@ def client_outcome(status, body) -> str:
 # ── one session ──────────────────────────────────────────────────────────────
 
 def run_session(base: str, rounds: int) -> dict:
+    session_t0 = time.perf_counter()
+    first_ask_elapsed_s = None
     print(f"GET {base}/health  (may take ~a minute if the instance is asleep)")
     status, body, ms, _ = call("GET", f"{base}/health", timeout=180)
     health = {"status": status, "client_ms": ms}
@@ -113,8 +119,12 @@ def run_session(base: str, rounds: int) -> dict:
     for r in range(1, rounds + 1):
         for name, payload in QUERIES:
             status, body, ms, headers = call("POST", f"{base}/ask", payload)
+            if first_ask_elapsed_s is None:
+                # D1's cold proof: if the server's uptime at this request is
+                # shorter than this, its process didn't exist when we started.
+                first_ask_elapsed_s = round(time.perf_counter() - session_t0, 1)
             agent = None
-            for part in headers.get("Server-Timing", "").split(","):
+            for part in headers.get("server-timing", "").split(","):
                 if part.strip().startswith("agent;dur="):
                     agent = float(part.split("=")[1])
             outcome = client_outcome(status, body)
@@ -124,7 +134,7 @@ def run_session(base: str, rounds: int) -> dict:
             asks.append({
                 "round": r, "name": name, "status": status, "client_ms": ms,
                 "server_agent_ms": agent, "client_outcome": outcome,
-                "detail": detail, "request_id": headers.get("X-Request-Id"),
+                "detail": detail, "request_id": headers.get("x-request-id"),
             })
             print(f"  [{r}] {name:<15} {status}  client {ms:>8.0f} ms   "
                   f"agent {agent if agent is not None else '-':>8} ms   {outcome}")
@@ -135,6 +145,7 @@ def run_session(base: str, rounds: int) -> dict:
         "url": base,
         "rounds": rounds,
         "health": health,
+        "first_ask_elapsed_s": first_ask_elapsed_s,
         "asks": asks,
         "stats": stats if isinstance(stats, dict) else {"unavailable": str(stats)},
         "logs": logs if isinstance(logs, list) else [],
@@ -164,23 +175,36 @@ def score(sessions: list[dict]) -> list[dict]:
     """One result per criterion, over however many sessions are passed in."""
     results = []
 
-    # D1 — cold start
-    cold_rows, d1_pass = [], 0
+    # D1 — cold start. Revised before any hosted result (see criteria.md D1):
+    # a session counts as cold only when the server process is younger than
+    # the session — its uptime at the first /ask is shorter than the time
+    # since this session began. nth_since_boot == 1 alone can't tell a woken
+    # instance from an awake one that simply hasn't served an /ask yet.
+    cold_rows, d1_pass, not_cold = [], 0, 0
     for s in sessions:
         pairs = _join(s)
-        first_lines = pairs[0][1] if pairs else []
-        nth = first_lines[0].get("nth_since_boot") if first_lines else None
-        ok = (s["health"]["status"] == 200
-              and s["health"]["client_ms"] <= COLD_HEALTH_MAX_MS
-              and nth == 1)
-        d1_pass += ok
+        first = pairs[0][1][0] if pairs and pairs[0][1] else {}
+        uptime, elapsed = first.get("uptime_s"), s.get("first_ask_elapsed_s")
+        cold = uptime is not None and elapsed is not None and uptime <= elapsed
+        fast = (s["health"]["status"] == 200
+                and s["health"]["client_ms"] <= COLD_HEALTH_MAX_MS)
+        if not cold:
+            not_cold += 1
+            mark = "NOT COLD — doesn't count, re-run after 15 min idle"
+        else:
+            d1_pass += fast
+            mark = "PASS" if fast else "FAIL"
         cold_rows.append(f"/health {s['health']['status']} in "
-                         f"{s['health']['client_ms'] / 1000:.1f} s, first /ask "
-                         f"nth_since_boot={nth} → {'PASS' if ok else 'FAIL'}")
+                         f"{s['health']['client_ms'] / 1000:.1f} s, server uptime "
+                         f"{uptime} s at first /ask vs {elapsed} s since session "
+                         f"start → {mark}")
+    n_cold = len(sessions) - not_cold
     results.append({
         "id": "D1", "name": "cold start answers within 60 s",
-        "measured": f"{d1_pass} of {len(sessions)} sessions",
-        "verdict": "PASS" if d1_pass == len(sessions) else "FAIL",
+        "measured": f"{d1_pass} of {n_cold} cold sessions"
+                    + (f" ({not_cold} not cold)" if not_cold else ""),
+        "verdict": ("FAIL" if d1_pass < n_cold
+                    else "INCOMPLETE" if not_cold else "PASS"),
         "detail": cold_rows,
     })
 

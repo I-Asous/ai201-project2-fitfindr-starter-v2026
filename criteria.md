@@ -234,6 +234,20 @@ a minute, a user hits that wait one time in three. The `nth_since_boot` check
 is there so a session where the instance never actually slept can't pass as
 a fast cold start.
 
+> **Revised in unit 9, before any hosted result:** a session counts as cold
+> when the server's `uptime_s` at the first `/ask` is **no greater than the
+> seconds elapsed since the session started** (measured by `measure.py`),
+> instead of when `nth_since_boot` = 1. A session that isn't cold doesn't
+> count toward the 3 and has to be re-run after 15 idle minutes. The 60 s
+> target and the 3 of 3 are unchanged.
+>
+> **Why revised:** `nth_since_boot` = 1 couldn't tell a woken instance from
+> one that was already awake and just hadn't served an `/ask` yet, because
+> `/health` isn't logged. Right after a deploy, an awake instance would have
+> passed as a 0.2 s "cold start". Comparing uptime against session time
+> proves the process didn't exist when the session began. This makes D1
+> harder to pass, not easier.
+
 ---
 
 ## D2. Warm full runs are fast at the median and bounded at the tail
