@@ -283,7 +283,13 @@ def score(sessions: list[dict]) -> list[dict]:
                 continue
             line = lines[0]
             expected = EXPECTED_CALLS.get(ask["client_outcome"])
-            if expected is not None and line.get("model_calls") == expected:
+            calls = line.get("model_calls")
+            if calls is None and line.get("outcome") == "bad_request":
+                # serve.py logs a bad request before the agent runs, so the
+                # line has no model_calls field: it reached generate.py zero
+                # times. Revised after the first after-session; see D5.
+                calls = 0
+            if expected is not None and calls == expected:
                 call_ok += 1
             else:
                 call_misses.append(f"{ask['name']} r{ask['round']}: "

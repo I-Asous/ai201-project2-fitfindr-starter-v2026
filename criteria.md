@@ -376,6 +376,15 @@ How cost is turned into money for the README: tokens × the model's published
 per-token price. Compute time is reported alongside, as the mean `agent_ms`
 per full run.
 
+> **Revised after the after sessions ran, measurement only:** a
+> `bad_request` log line has no `model_calls` field, because `serve.py`
+> rejects the request before `run_agent()` and `generate.py` are reached.
+> `measure.py` was reading that absent field as "not 0" and counting every
+> bad request as a call-count miss: 6 of the after set's misses. It now
+> counts an absent field on a `bad_request` line as 0 calls, which is what
+> happened. The target is unchanged: still 2 calls per full run, 0 otherwise,
+> 45 of 45. The before set is unaffected (none of its lines survived).
+
 > **Added after sessions had run:** D1–D4 and the session plan were committed
 > first (`8dae3c2`). The brief asks for five criteria and I had four, so D5
 > was written at 2026-11-12T03:56Z, after four hosted sessions had been
