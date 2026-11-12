@@ -1,0 +1,42 @@
+# Render blueprint for FitFindr — unit 9.
+#
+# Render reads this file when you create the service with
+# "New → Blueprint" and point it at this repo. Everything about how the app
+# is built and started lives here, in the repo, instead of in a dashboard form.
+#
+# The start command, flag by flag:
+#   --workers 1        serve.py's one-at-a-time lock only works inside ONE
+#                      process. Two workers = two locks = two agent runs and
+#                      two MCP subprocesses at once in 512 MB.
+#   (no -k ...)        the default SYNC worker. An async worker (gevent,
+#                      eventlet) breaks every MCP call: asyncio.run() refuses
+#                      to start inside a running event loop. See serve.py.
+#   --timeout 300      gunicorn kills a worker silent for 30s by default. One
+#                      agent run makes two model calls, and generate.py's
+#                      pacing can wait up to ~65s per call when the per-minute
+#                      limit is hit — a 30s timeout turns that wait into a
+#                      dead worker and a 502.
+#   --bind 0.0.0.0:$PORT   Render tells the app its port through PORT.
+
+services:
+  - type: web
+    name: fitfindr
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn serve:app --workers 1 --timeout 300 --bind 0.0.0.0:$PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      # Cache OFF when deployed. With it on, a repeated query returns the
+      # same fit card word for word and its latency measures a disk read, not
+      # the agent. request_log.py logs cache_hits either way.
+      - key: AI201_CACHE
+        value: "0"
+      # Set in the Render dashboard, never in this file. `sync: false` makes
+      # Render ask for the value when the blueprint is first applied.
+      - key: GEMINI_API_KEY
+        sync: false

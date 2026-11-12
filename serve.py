@@ -27,15 +27,19 @@ web server has to be. The reason is worth reading before you deploy: see the
 note above `_one_at_a_time` below — it also decides which gunicorn worker you
 can use.
 
-⚠️ There is deliberately NO logging, NO timing and NO request counting in this
-file. That is unit 9's follow-along: you instrument this yourself, first, and
-then deploy it. A structured log you were handed teaches you nothing about
-what belongs in one — and the timing field is the one everybody skips.
+Instrumented (unit 9): every /ask writes one JSON line through
+request_log.py — timing split into queue wait and agent time, the outcome,
+model calls, tokens and memory. Two more routes read it back:
+
+    GET  /stats     aggregates since this instance booted (p50/p95, outcomes)
+    GET  /logs      the last requests' log lines, as JSON — so they can be
+                    copied out before a free instance sleeps and loses them
 """
 
 import os
 import sys
 import threading
+import time
 
 # config first, and before anything that talks to the model: it loads your .env
 # and fixes the Windows console encoding for every module that imports it.
@@ -43,10 +47,14 @@ import config  # noqa: F401
 
 from flask import Flask, jsonify, request
 
+import generate
+import request_log
 from agent import run_agent
 from utils.data_loader import get_example_wardrobe
 
 app = Flask(__name__)
+# Keep log lines in the order they were written (ts first), not alphabetical.
+app.json.sort_keys = False
 
 
 # ── one request at a time ─────────────────────────────────────────────────────
@@ -107,12 +115,24 @@ def ask():
                                                 example wardrobe the CLI uses.
     Out:  the session dict from run_agent(), as JSON.
     """
-    payload = request.get_json(silent=True) or {}
-    query = (payload.get("query") or "").strip()
+    started = time.perf_counter()
+    request_id = request_log.new_request_id()
+
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        payload = {}
+    query = payload.get("query")
+    query = query.strip() if isinstance(query, str) else ""
     if not query:
         # 400 rather than a stack trace: the caller can act on this one.
-        return jsonify({"error": "Send JSON with a 'query' field, e.g. "
-                                 '{"query": "vintage graphic tee under $30"}'}), 400
+        request_log.record({
+            "request_id": request_id, "route": "/ask", "status": 400,
+            "outcome": "bad_request", "total_ms": _ms_since(started),
+        })
+        response = jsonify({"error": "Send JSON with a 'query' field, e.g. "
+                                     '{"query": "vintage graphic tee under $30"}'})
+        response.headers["X-Request-Id"] = request_id
+        return response, 400
 
     wardrobe = payload.get("wardrobe")
     if not isinstance(wardrobe, dict):
@@ -138,18 +158,96 @@ def ask():
 
     failure = None
     session = None
+    waited_from = time.perf_counter()
     with _one_at_a_time:
+        queue_ms = _ms_since(waited_from)
+        # Snapshot generate.py's running totals INSIDE the lock, so the delta
+        # below belongs to this request and nobody else's.
+        calls0, hits0 = generate.call_count(), generate._cache_hits
+        tokens0 = generate.token_counts()
+        agent_started = time.perf_counter()
         try:
             session = run_agent(query, wardrobe)
         except Exception as exc:  # noqa: BLE001 — a 500 with a sentence beats a hang
             failure = f"{type(exc).__name__}: {exc}"
+        agent_ms = _ms_since(agent_started)
+        calls1, hits1 = generate.call_count(), generate._cache_hits
+        tokens1 = generate.token_counts()
 
-    # Outside the lock: building a response is not work the next caller should
-    # be waiting on.
+    # Outside the lock: building a response and writing the log are not work
+    # the next caller should be waiting on.
+    status = 500 if failure is not None else 200
+    item = (session or {}).get("selected_item") or {}
+    request_log.record({
+        "request_id": request_id,
+        "route": "/ask",
+        "status": status,
+        "outcome": _outcome(session, failure),
+        "query": query,
+        "parsed": (session or {}).get("parsed"),
+        "item_id": item.get("id"),
+        "steps": (session or {}).get("steps"),
+        "wardrobe_items": len(wardrobe.get("items") or []),
+        "queue_ms": queue_ms,
+        "agent_ms": agent_ms,
+        "total_ms": _ms_since(started),
+        "model_calls": calls1 - calls0,
+        "cache_hits": hits1 - hits0,
+        "prompt_tokens": tokens1["prompt"] - tokens0["prompt"],
+        "output_tokens": tokens1["output"] - tokens0["output"],
+        "model_calls_since_boot": calls1,
+        "error": failure or (session or {}).get("error"),
+    })
+
+    response = jsonify({"error": failure} if failure is not None else session)
+    response.headers["X-Request-Id"] = request_id
+    response.headers["Server-Timing"] = (
+        f"queue;dur={queue_ms}, agent;dur={agent_ms}"
+    )
+    return response, status
+
+
+@app.get("/stats")
+def stats():
+    """Aggregates over the requests this instance remembers. Resets on sleep."""
+    return jsonify(request_log.stats())
+
+
+@app.get("/logs")
+def logs():
+    """
+    The last N structured log lines (default 50, ?n= for more, up to 200).
+
+    The point: on a free host the log disappears when the instance sleeps.
+    This hands it back over HTTP so it can be committed while it still exists.
+    Wardrobe contents are never logged, so nothing here is more private than
+    the queries themselves.
+    """
+    try:
+        n = max(1, min(int(request.args.get("n", 50)), request_log.LOG_MEMORY))
+    except ValueError:
+        n = 50
+    return jsonify(request_log.recent(n))
+
+
+# ── instrumentation helpers ───────────────────────────────────────────────────
+
+def _ms_since(t0: float) -> float:
+    return round((time.perf_counter() - t0) * 1000, 1)
+
+
+def _outcome(session: dict | None, failure: str | None) -> str:
+    """The run's result in one countable word. Mirrors run_agent()'s exits."""
     if failure is not None:
-        return jsonify({"error": failure}), 500
-
-    return jsonify(session)
+        return "server_error"
+    if not session.get("error"):
+        return "complete"
+    steps = session.get("steps") or []
+    if "search_listings" not in steps:
+        return "mcp_error"
+    if not session.get("search_results"):
+        return "no_match"
+    return "model_unavailable"
 
 
 if __name__ == "__main__":

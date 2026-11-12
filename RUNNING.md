@@ -83,6 +83,7 @@ does nothing.
 | `python mcp_client.py` | Asks the server what it offers — **unit 4** |
 | `python run_eval.py --label before` | Runs every scenario five times and writes the run log — **unit 4** |
 | `python serve.py` | Serves the agent over HTTP instead of exiting — **unit 9** |
+| `python measure.py --url ...` | Times a running server and saves the run record — **unit 9** |
 
 Useful flags on `ask`:
 
@@ -149,9 +150,57 @@ gunicorn serve:app
 | `gunicorn serve:app`, exactly | Not `-k gevent`, not `-k eventlet`, not wrapped for uvicorn. `mcp_client.call_tool` uses `asyncio.run()`, which won't start inside a running event loop, so an async worker breaks **every** MCP call — and only once you've deployed it |
 | The first request is slow | The free tier puts your app to sleep after about fifteen minutes of nothing. The next request wakes it up and waits for it — around a minute. Not a bug, and worth knowing before you demo it |
 
-`serve.py` ships with **no logging and no timing in it**, on purpose. You add
-that yourself in the follow-along, before you deploy — instrumenting first is
-the point of the session.
+### Deployed on Render
+
+Host: **Render**, free web service, built from [`render.yaml`](render.yaml).
+
+1. Push this repo to GitHub.
+2. In Render: **New → Blueprint**, pick this repo. Render reads `render.yaml`.
+3. When it asks for `GEMINI_API_KEY`, paste your key. It lives in Render's
+   environment settings, never in the repo.
+4. Wait for the deploy to go green, then:
+
+```bash
+curl https://<your-service>.onrender.com/health
+curl -X POST https://<your-service>.onrender.com/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "vintage graphic tee under $30"}'
+```
+
+The exact start command Render runs (from `render.yaml`):
+
+```bash
+gunicorn serve:app --workers 1 --timeout 300 --bind 0.0.0.0:$PORT
+```
+
+`--workers 1` keeps the one-at-a-time lock meaningful (it only works inside one
+process). `--timeout 300` is there because gunicorn's default 30s kills a worker
+that is waiting out the model's per-minute limit. `render.yaml` also sets
+`PYTHON_VERSION=3.13.0` and `AI201_CACHE=0`.
+
+### Instrumentation
+
+Every `/ask` writes one JSON line (see `request_log.py` for every field) to
+stdout, which is Render's **Logs** tab, and to `logs/requests.jsonl` on the
+instance. Two routes read it back:
+
+| Route | What it returns |
+|---|---|
+| `GET /stats` | Since this instance booted: request count, outcomes, status codes, p50/p95 latency, model calls, tokens, session budget used, peak memory |
+| `GET /logs?n=50` | The last *n* structured log lines (max 200) |
+| `POST /ask` response headers | `X-Request-Id` (matches the log line) and `Server-Timing` (queue and agent ms) |
+
+Both reset when the instance sleeps (after ~15 min idle). To keep a record:
+
+```bash
+python measure.py --url https://<your-service>.onrender.com --rounds 3
+```
+
+It times `/health` first (that request pays for a cold start, which the
+server can't see), runs a set of queries that covers every exit from the loop,
+pulls `/stats` and `/logs`, and writes `results/deploy_hosted_<timestamp>.md`.
+**Commit that file in the same session.** It's the only copy of the log that
+lasts.
 
 ---
 
@@ -166,6 +215,9 @@ the point of the session.
 | `trace.py` | The trace helper, and the loop's stop condition |
 | `app.py` | The command line |
 | `serve.py` | The same agent over HTTP, for deploying — **unit 9** |
+| `request_log.py` | The structured per-request log behind `/stats` and `/logs` — **unit 9** |
+| `render.yaml` | How Render builds and starts the service — **unit 9** |
+| `measure.py` | Measures a running server and writes a run record to `results/` — **unit 9** |
 | `mcp_server.py` | Your MCP server — **unit 4, you register the tool** |
 | `mcp_client.py` | Calling an MCP tool from your agent. Given to you |
 | `scenarios.py` | What your test runs. **You fill this in** |
