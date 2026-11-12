@@ -933,8 +933,39 @@ Per criterion:
 
 ## Unit 9 — Cost of One Run
 
-<!-- Tokens per full run from the log (D5), converted with the model's
-     published price, plus mean agent_ms. Say how it was measured. -->
+**One full run (two model calls) = 830 tokens ≈ $0.0006, and 23.3 s of
+wall-clock time on the instance.**
+
+How it was measured: each `/ask` log line carries `prompt_tokens` and
+`output_tokens`. Those are the service's own counts from
+`response.usage_metadata`, summed per request by `generate.py` and
+differenced per request by `serve.py`. Over the **15 full runs** in the after
+set (cache off, so every call was real):
+
+| | Mean per full run |
+|---|---|
+| Prompt tokens | 658.4 |
+| Output tokens | 171.6 |
+| Total | **830.0** (range 662–969) |
+| Model calls | **2** (every one of the 15) |
+| Time in `run_agent()` | **23.3 s** mean, 17.8 s median |
+| Of which: MCP spawn + search (from the 9 `no_match` runs, which make no model call) | ~4.4 s |
+
+In money, at gemini-3.5-flash-lite's listed rate of $0.30 per 1M input
+tokens and $2.50 per 1M output tokens: 658.4 × $0.30/1M + 171.6 ×
+$2.50/1M = $0.00020 + $0.00043 = **$0.00063 per full run**, about 1,600 runs
+per dollar. Output is 21% of the tokens but 68% of the cost. What I actually
+paid was **$0**, because this runs on the free tier. Its real limit is 15
+requests a minute, about 7 full runs a minute.
+
+Failed runs cost too: the 12 `model_unavailable` runs spent 1,659 tokens
+(≈ $0.0005 together) and produced no fit card.
+
+Two caveats on the number. (1) `generate.py` counts `candidates_token_count`
+but not thinking tokens (`thoughts_token_count`). If the model "thinks", those
+are billed as output and missing here, so this is a floor. (2) The rate comes
+from third-party listings that agree with each other. I couldn't open
+Google's own pricing page.
 
 ## Unit 9 — The Improvement
 
@@ -963,11 +994,101 @@ That is outside this system. It most likely explains today's 17–42 s runs
 and session 3's `model_unavailable`, and it will affect the after sessions
 too.
 
-<!-- After set: results/deploy_after_*, scored side by side below. -->
+**Deployed and checked:** at 16:36 UTC, `/stats` showed commit `7a1412f`
+live, and a `/health` sent during an `/ask` came back in **0.59 s**. That
+`/ask` ran 91 s, and the instance survived it.
+
+### Run Log — After
+
+Three sessions, same command with `--label after`, same rules. Records:
+`results/deploy_after_*.md`. Score: `results/score_after.txt`. One attempt at
+17:54 never left my laptop: the Mac had slept, DNS failed, and all 16 calls
+failed in 1 ms without reaching Render. Per the session rule it's kept as
+`results/deploy_after-clientoffline_*` and was replaced by a re-run at
+17:56.
+
+| Session (UTC) | `/health` (wake) | 15 `/ask` requests |
+|---|---|---|
+| 17:00:00 | 200 in 22.3 s | **0 × 5xx.** 2 `complete`, 6 `model_unavailable` (Gemini 503), 3 `no_match`, 3 `bad_request` (400) |
+| 17:25:00 | 200 in 22.3 s | **0 × 5xx.** 6 `complete`, 3 `model_unavailable`, 3 `no_match`, 3 `bad_request` |
+| 17:56:26 | 200 in 21.4 s | **0 × 5xx.** 7 `complete`, 2 `model_unavailable`, 3 `no_match`, 3 `bad_request` |
+
+### Before and after, side by side
+
+| Criterion | Target | Before (sync worker) | After (`--threads 4`) |
+|---|---|---|---|
+| D1 cold start | ≤ 60 s, proven cold, 3 of 3 | 22–43 s, **unprovable** (logs lost) | **MET**: 3 of 3 proven cold, 21.4–22.3 s |
+| D2 warm latency | p50 ≤ 8 s, p95 ≤ 75 s, 0 × 5xx | **MISSED**: 0 runs, 40 × 5xx | **MISSED**: p50 **17.2 s**, p95 33.5 s ✓, 0 × 5xx ✓ (n = 14) |
+| D3 one truthful log line | 45 of 45 | **MISSED**: 0 of 45 | **MET**: 45 of 45 |
+| D4 memory | ≤ 256 MB, 3 of 3 | **MISSED**: unmeasurable | **MET**: 233.4 / 234.4 / 234.4 MB |
+| D5 cost | mean ≤ 1,000 tokens; calls 45 of 45 | **MISSED**: 0 of 45 | **MISSED**: mean **830** tokens ✓, calls **33 of 45** ✗ |
+
+**What the change fixed:** every miss in the before set had one cause, the
+instance being killed, and that cause is gone. Zero 5xx in 45 requests, with
+runs up to 70 s, and every request left its log line. D1, D3 and D4 went from
+unmeasurable to met.
+
+**What it didn't fix, and why (the two remaining misses):**
+
+- **D2, p50 17.2 s against 8 s.** The place is the model calls, not the
+  deployment. A `no_match` run does everything except call the model (parse,
+  MCP subprocess spawn, search), and it averaged **4.4 s** on Render. So the
+  MCP spawn on 0.1 CPU costs about 4 s, about what D2's reasoning predicted
+  (10× the laptop's 0.3 s). That leaves 8 s for two model calls if the
+  target is to hold, and today they took a median ~13 s. Gemini was under
+  load all afternoon (next bullet). The 70 s run used exactly 2 calls, so it
+  wasn't the pacing retrying: one call was simply that slow. Last night's
+  trial sessions, with Gemini healthy, ran full runs in 5.3–7 s on the same
+  deployment, which would have met 8 s. I'm not counting that, since it
+  isn't this result set.
+- **D5, calls 33 of 45.** All 12 misses are `model_unavailable`: Gemini
+  answered `503 UNAVAILABLE: This model is currently experiencing high
+  demand`. That's 12 of 27 model-path runs, 44%. A run that dies at
+  `suggest_outfit` logs 1 call, and one that dies at `create_fit_card` logs
+  2 calls but no fit card. **All 15 full runs used exactly 2 calls**, so the
+  pacing never caused a retry, which was the specific failure D5's call
+  count was there to catch. The token half met: 830 against 1,000.
 
 ## Unit 9 — What's Left
 
-<!-- What I'd do next, and why I stopped. -->
+**D2 and D5 are still missed, and both come from the model provider, not
+the deployment.** What I'd do, in order:
+
+1. **Retry a 503 once, after a short wait, in `generate.py`.** Today it
+   treats a 503 like a bad key and gives up. That would have rescued some of
+   the 12 runs. I didn't do it because it's an agent change (shape B), and
+   this unit's scope rule was no change to what the agent does. It would also
+   have been a second change in the same after set.
+2. **Spawn the MCP server once, not once per search.** That's about 4 s of
+   every run on Render's 0.1 CPU, half of D2's 8 s budget, spent starting a
+   Python interpreter. One long-lived MCP session per worker would remove it.
+   I stopped here because it changes `mcp_client.py` and the process model,
+   and measuring it properly needs Gemini healthy, which it wasn't today.
+3. **Re-run the after set on a normal day.** D2's miss is measured, and it
+   stays a miss. But one afternoon of Gemini under load can't separate "8 s
+   was too tight" from "the provider was slow".
+
+**Things that pass but that I don't fully trust:**
+
+- **The log still lives on the instance.** D3 passes because the instance no
+  longer dies, not because the log could survive it if it did. A crash would
+  still erase its own record. Sending each line somewhere off the box would
+  fix that.
+- **D4 passes with 22 MB to spare, and it rose.** It was ~192 MB with the
+  sync worker and is 234 MB with threads. Whether the children figure counts
+  the forked parent's memory twice is unverified. If it does, the real peak
+  is lower. If it doesn't, there's less headroom than "half the plan"
+  suggests.
+- **`generate.py`'s 300-call budget never resets** on a server that stays up.
+  After ~150 full runs in one instance's life, every request would fail.
+  `/stats` shows `session_budget.used`, but nothing acts on it.
+- **`/stats` and `/logs` have no auth.** Queries and timings are public to
+  anyone with the URL. No wardrobe contents are logged, but it isn't
+  something to leave on for real users.
+- **The before-set diagnosis is inference.** The local measurement (0.004 s
+  vs 2.94 s), the timing pattern and the fix's result all point to failed
+  health checks. Render's event log for 15:31, 15:56 and 16:21 UTC would
+  confirm it directly, and I haven't quoted it here.
 
 <!-- ═════════════════════════════════════════════════════════════════════
 

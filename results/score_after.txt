@@ -1,0 +1,35 @@
+Scoring 3 session(s) against criteria.md D1–D5:
+
+  2026-11-12T17:00:00+00:00  https://fitfindr-ha9z.onrender.com
+  2026-11-12T17:25:00+00:00  https://fitfindr-ha9z.onrender.com
+  2026-11-12T17:56:26+00:00  https://fitfindr-ha9z.onrender.com
+
+  D1  PASS  3 of 3 cold sessions                      cold start answers within 60 s
+          /health 200 in 22.3 s, server uptime 72.3 s at first /ask vs 86.8 s since session start → PASS
+          /health 200 in 22.3 s, server uptime 20.5 s at first /ask vs 39.6 s since session start → PASS
+          /health 200 in 21.4 s, server uptime 43.0 s at first /ask vs 61.7 s since session start → PASS
+  D2  FAIL  n=14, p50=17.2 s, p95=33.5 s, 5xx=0       warm full runs: p50 ≤ 8 s, p95 ≤ 75 s, no 5xx
+          warm full-run client ms, sorted: [5901.9, 9776.1, 10453.1, 12874.5, 13047.6, 13798.9, 17204.3, 18224.6, 21855.7, 23742.2, 31334.3, 31370.2, 33491.4, 70052.9]
+  D3  PASS  45 of 45                                  one truthful log line per /ask
+          every request matched
+  D4  PASS  3 of 3 sessions                           peak memory ≤ 256 MB
+          peak server + MCP child = 233.4 MB → PASS
+          peak server + MCP child = 234.4 MB → PASS
+          peak server + MCP child = 234.4 MB → PASS
+  D5  FAIL  3 eligible session(s); mean 830.0 tokens over 15 full runs; calls as expected 33 of 45  full run: mean ≤ 1,000 tokens; calls exactly 2 / 0
+          tokens per full run: [662, 670, 671, 704, 716, 738, 876, 879, 895, 913, 922, 926, 943, 966, 969]
+          mean agent_ms per full run: 23290
+          match r1: 2 calls, outcome model_unavailable
+          match_size r1: 2 calls, outcome model_unavailable
+          empty_wardrobe r1: 1 calls, outcome model_unavailable
+          empty_wardrobe r2: 1 calls, outcome model_unavailable
+          match r3: 1 calls, outcome model_unavailable
+          match_size r3: 1 calls, outcome model_unavailable
+          empty_wardrobe r3: 1 calls, outcome model_unavailable
+          match r1: 1 calls, outcome model_unavailable
+          match_size r1: 1 calls, outcome model_unavailable
+          match_size r2: 1 calls, outcome model_unavailable
+          match r2: 2 calls, outcome model_unavailable
+          match_size r2: 1 calls, outcome model_unavailable
+
+Paste this into the README as text — or redirect it into a file and commit it.
