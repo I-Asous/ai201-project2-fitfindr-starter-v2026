@@ -1128,6 +1128,95 @@ runs a minute; (c) **risk:** gunicorn has 4 threads, and 10 requests waiting
 on the lock can fill all 4. If they do, `/health` blocks again, the failure
 the improvement fixed, and Render may restart the instance under load.
 
+### Stretch 1 result — latency breakdown
+
+Measured on Render (commit `9a0cf92`, `--threads 4`, cache off, warm) from
+each request's own `stage_ms` log field, plus the client's clock. Two
+sessions: `results/deploy_latency_2026-11-12_181521` (15 of 15 logged) and
+the 11 surviving lines of `deploy_latency-interrupted-by-deploy_..._181001`
+(a push redeployed the service mid-session; the lines that survived are from
+the new instance and are complete). Built with `python latency.py
+<sessions>`, full output in `results/latency_breakdown.txt`.
+
+**One full run, n = 9 (mean 23.6 s round trip):**
+
+| Component | Mean | Median | Share |
+|---|---|---|---|
+| Network + Render proxy | 0.27 s | 0.26 s | 1.1% |
+| Waiting for the lock | 0 | 0 | 0% |
+| `parse_query` (regex) | 0.00 s | 0.00 s | 0% |
+| `search_listings` via MCP | **4.30 s** | 4.11 s | **18.2%** |
+| ↳ MCP startup: spawn `mcp_server.py` + handshake | 3.51 s | 3.50 s | |
+| ↳ the search itself | **0.04 s** | **0.007 s** | |
+| ↳ MCP teardown | 0.76 s | 0.70 s | |
+| `suggest_outfit` (model call 1) | **8.77 s** | 5.43 s | **37.2%** |
+| `create_fit_card` (model call 2) | **10.25 s** | 10.17 s | **43.5%** |
+| Flask, JSON, logging | 0.0005 s | | 0% |
+
+What it says:
+
+- **The two model calls are 81% of a run, and all of it is the API.**
+  `pacing_ms` was 0 on every request, so none of it was `generate.py`
+  waiting for a rate-limit slot. This is Gemini's response time, on a day it
+  was also returning 503s (6 of the 15 model-path runs here).
+- **The search is 7 ms, and starting the process that runs it is 4.3 s.**
+  99.8% of `search_listings` is the MCP plumbing: launching a fresh Python
+  interpreter, importing `mcp`, the handshake, and shutting it down. The
+  declared prediction ("MCP spawn ≈ 4 s") holds. The no-match runs confirm
+  it: 4.6 s round trip with no model call, 4.1 s of it MCP.
+- **Everything I built this unit is free.** The log, `/stats` and `Flask`
+  together cost 0.5 ms a request. Measurement didn't slow the system.
+- **For D2**, the 8 s target can't hold while 4.3 s of it goes to process
+  startup. Spawning the MCP server once per worker (What's Left #2) would
+  bring a run down to roughly the two model calls plus 0.3 s.
+
+### Stretch 2 result — load observation (10× the normal rate)
+
+`python load.py --url https://fitfindr-ha9z.onrender.com` at 18:13:29 UTC,
+warm instance (boot `c3a28fa7`, commit `9a0cf92`). Full record:
+`results/load_2026-11-12_181329.md`.
+
+| | Normal (after set: 1 client) | Under load (10 clients at once) |
+|---|---|---|
+| Requests | 45 | 30 |
+| 5xx / no response | **0** | **28 of 30** |
+| Completed full runs | 15 | **2** (23.5 s and 43.7 s) |
+| `/health` from outside | 0.2–0.6 s | **46.4 s**, then 502 |
+| Log lines that survived | 45 of 45 | **0 of 30** |
+| Instance | stayed up | **restarted**: down at ~48 s; Render brought up boot `3b9d18b8` at 18:14:33, same commit |
+
+**What happened, against the predictions:**
+
+- **(c) came true, and it was the whole story.** Ten requests arrived at
+  once. Gunicorn has 4 threads. One ran the agent and three sat waiting on
+  `serve.py`'s lock, so all four were busy. The other six connections, plus
+  every `/health` probe and Render's own health check, queued for a free
+  thread. My probe sent at 2.1 s waited 46.4 s and got a 502. At about 48 s
+  Render gave up on the instance and replaced it, and the 8 requests still
+  queued all got 502 at once. **This is the before-set failure again**, the
+  health check stuck behind agent work. `--threads 4` only moved the
+  threshold: from "one `/ask` in flight" to "more than ~3".
+- **(a) showed briefly.** The second completed run (43.7 s) took about twice
+  the first (23.5 s): it ran after the first finished, which is the lock
+  serialising them. The log that would have given exact `queue_ms` values
+  died with the instance.
+- **(b) never got tested.** The instance died before 15 model calls a
+  minute could matter: 2 full runs = 4 calls.
+- **The real limit isn't the model quota, it's threads vs. waiting
+  requests.** Threads are spent on requests that are just waiting for the
+  lock. The fix that follows is to stop holding a thread while waiting.
+  Either reject with a fast 429/503 when the lock is busy and a few are
+  already queued, or put the work on a real queue and return a job id.
+  Raising `--threads` only moves the cliff, and every extra waiting thread
+  is memory on a 512 MB box.
+
+**One more thing the stretch turned up:** a push to `main` while traffic is
+flowing redeploys mid-request. The latency session at 18:10 lost one
+request (502) and its first 4 log lines when `9a0cf92` deployed underneath
+it. Render's free tier doesn't drain the old instance. For a real service,
+`autoDeploy: true` belongs behind a quiet-hours rule, or deploys need to be
+manual.
+
 <!-- ═════════════════════════════════════════════════════════════════════
 
      SUBMISSION CHECKLIST — unit 3

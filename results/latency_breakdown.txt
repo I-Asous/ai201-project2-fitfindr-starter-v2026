@@ -1,0 +1,53 @@
+Latency breakdown over 2 session(s): deploy_latency_2026-11-12_181521.json, deploy_latency-interrupted-by-deploy_2026-11-12_181001.json
+
+### Full runs (`complete`) — n = 9
+
+| component | mean ms | median ms | max ms | share of mean round trip |
+|---|---|---|---|---|
+| network + proxy | 271.0 | 258.1 | 454.1 | 1.1% |
+| queue (lock wait) | 0.0 | 0.0 | 0.0 | 0.0% |
+| parse_query | 0.0 | 0.0 | 0.1 | 0.0% |
+| search_listings | 4,298.7 | 4,113.1 | 4,800.9 | 18.2% |
+|   ├ MCP startup (spawn + handshake) | 3,506.4 | 3,497.0 | 3,937.4 |  |
+|   ├ tool call (the search) | 36.1 | 7.1 | 94.5 |  |
+|   └ MCP teardown | 756.2 | 698.2 | 1,001.3 |  |
+| suggest_outfit (model call 1) | 8,769.8 | 5,427.9 | 22,354.4 | 37.2% |
+| create_fit_card (model call 2) | 10,253.5 | 10,166.5 | 21,420.1 | 43.5% |
+| server overhead (Flask, JSON, log) | 0.5 | 0.5 | 0.7 | 0.0% |
+| **client round trip** | **23,593.5** | 22,290.3 | 38,620.0 | 100% |
+
+Of the model stages, time spent waiting on `generate.py`'s pacer or backoff: mean 0.0 ms, max 0.0 ms. Cold-start requests included: 0.
+
+### No-match runs (no model call) — n = 5
+
+| component | mean ms | median ms | max ms | share of mean round trip |
+|---|---|---|---|---|
+| network + proxy | 476.4 | 361.4 | 1,041.4 | 10.4% |
+| queue (lock wait) | 0.0 | 0.0 | 0.0 | 0.0% |
+| search_listings | 4,123.1 | 4,184.1 | 4,334.9 | 89.6% |
+|   ├ MCP startup (spawn + handshake) | 3,471.2 | 3,476.0 | 3,724.2 |  |
+|   ├ tool call (the search) | 5.3 | 5.4 | 5.4 |  |
+|   └ MCP teardown | 646.6 | 606.4 | 712.3 |  |
+| server overhead (Flask, JSON, log) | 0.5 | 0.5 | 0.5 | 0.0% |
+| **client round trip** | **4,600.0** | 4,545.9 | 4,967.2 | 100% |
+
+Of the model stages, time spent waiting on `generate.py`'s pacer or backoff: mean 0.0 ms, max 0.0 ms. Cold-start requests included: 0.
+
+### Runs that hit a model 503 — n = 6
+
+| component | mean ms | median ms | max ms | share of mean round trip |
+|---|---|---|---|---|
+| network + proxy | 297.4 | 183.4 | 866.5 | 1.8% |
+| queue (lock wait) | 0.0 | 0.0 | 0.0 | 0.0% |
+| parse_query | 0.1 | 0.0 | 0.2 | 0.0% |
+| search_listings | 5,991.0 | 4,357.4 | 9,788.8 | 36.7% |
+|   ├ MCP startup (spawn + handshake) | 3,664.6 | 3,661.8 | 3,993.3 |  |
+|   ├ tool call (the search) | 49.3 | 49.4 | 93.5 |  |
+|   └ MCP teardown | 2,277.0 | 700.8 | 5,701.9 |  |
+| suggest_outfit (model call 1) | 9,077.2 | 8,031.9 | 17,156.5 | 55.6% |
+| create_fit_card (model call 2) | 956.8 | 0.0 | 5,740.7 | 5.9% |
+| server overhead (Flask, JSON, log) | 0.8 | 0.6 | 2.2 | 0.0% |
+| **client round trip** | **16,323.2** | 17,555.2 | 24,060.1 | 100% |
+
+Of the model stages, time spent waiting on `generate.py`'s pacer or backoff: mean 0.0 ms, max 0.0 ms. Cold-start requests included: 1.
+
