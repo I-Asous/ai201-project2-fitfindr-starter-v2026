@@ -1095,6 +1095,39 @@ the deployment.** What I'd do, in order:
   health checks. Render's event log for 15:31, 15:56 and 16:21 UTC would
   confirm it directly, and I haven't quoted it here.
 
+## Unit 9 — Stretch (declared before starting)
+
+Declared here, and committed, **before any stretch code was written or run**.
+Two of the three stretch options:
+
+**1. Latency breakdown: where the time goes in one run, measured.**
+Plan: time each stage of `run_agent()` and log it per request, so the
+breakdown comes from the deployed system's own log, not a guess. Stages:
+`parse_query`, `search_listings` (split into *MCP spawn + handshake* and
+*the tool call itself*), `select_item`, `suggest_outfit`, `create_fit_card`.
+Plus the time `generate.py` spent *waiting on the pacer* rather than on the
+API. This is instrumentation only: the agent's decisions, prompts and tools
+don't change. The session dict gains a `timings_ms` key, and the log line
+gains `stage_ms` and `pacing_ms`. Measured over one 15-request session on
+Render.
+*Prediction, from the no-match runs:* MCP spawn ≈ 4 s of every run, and the
+two model calls make up most of the rest.
+
+**2. Load observation: ten times the normal rate.**
+"Normal" is how this system has been used all unit: one client
+(`measure.py`), one request in flight at a time. The load run is **10
+clients at once**, each sending 3 `/ask` requests (match, no-match, match):
+30 requests, 10 in flight. A probe hits `/health` every 2 s throughout. I'll
+report what changed against a normal session: per-request latency,
+`queue_ms` (time waiting for `serve.py`'s one-at-a-time lock), throughput,
+5xx, `/health` latency, memory, and whether the instance survives.
+*Predictions:* (a) the lock serialises everything, so `queue_ms` climbs
+roughly linearly and the last request waits several minutes; (b) 20 full
+runs = 40 model calls against the 15/min pacer, so throughput caps at ~7 full
+runs a minute; (c) **risk:** gunicorn has 4 threads, and 10 requests waiting
+on the lock can fill all 4. If they do, `/health` blocks again, the failure
+the improvement fixed, and Render may restart the instance under load.
+
 <!-- ═════════════════════════════════════════════════════════════════════
 
      SUBMISSION CHECKLIST — unit 3
