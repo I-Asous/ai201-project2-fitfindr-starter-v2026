@@ -198,7 +198,7 @@ python measure.py --url https://<your-service>.onrender.com --rounds 3
 
 It times `/health` first (that request pays for a cold start, which the
 server can't see), runs a set of queries that covers every exit from the loop,
-pulls `/stats` and `/logs`, scores the session against criteria D1–D4 in
+pulls `/stats` and `/logs`, scores the session against criteria D1–D5 in
 `criteria.md`, and writes `results/deploy_hosted_<timestamp>.md` plus a
 `.json` twin. **Commit both in the same session.** They're the only copy of the
 log that lasts.

@@ -13,7 +13,7 @@ What one session does, in order:
      time, because the server didn't exist yet. So it's measured here.
   2. POST /ask for each query in QUERIES, --rounds times over.
   3. GET /stats and GET /logs, so the server's own record comes back with it.
-  4. Scores the session against criteria D1–D4 (criteria.md) and writes
+  4. Scores the session against criteria D1–D5 (criteria.md) and writes
      results/deploy_<label>_<timestamp>.md, plus a .json twin with the raw
      data so several sessions can be scored together with --score.
 
@@ -50,6 +50,11 @@ COLD_HEALTH_MAX_MS = 60_000      # D1
 WARM_P50_MAX_MS = 8_000          # D2
 WARM_P95_MAX_MS = 75_000         # D2
 PEAK_MEMORY_MAX_MB = 256         # D4
+MEAN_TOKENS_PER_RUN_MAX = 1_000  # D5
+# D5 was written after some sessions had already run (see criteria.md), so it
+# is scored only on sessions that started after it existed.
+D5_WRITTEN_AT = "2026-11-12T03:56:02+00:00"
+EXPECTED_CALLS = {"complete": 2, "no_match": 0, "bad_request": 0}  # D5
 
 
 # ── HTTP ─────────────────────────────────────────────────────────────────────
@@ -152,7 +157,7 @@ def run_session(base: str, rounds: int) -> dict:
     }
 
 
-# ── scoring against criteria.md D1–D4 ────────────────────────────────────────
+# ── scoring against criteria.md D1–D5 ────────────────────────────────────────
 
 def _pct(values: list[float], p: float) -> float | None:
     """Nearest-rank percentile, the same definition request_log.py uses."""
@@ -265,6 +270,46 @@ def score(sessions: list[dict]) -> list[dict]:
         "verdict": "PASS" if d4_pass == len(sessions) else "FAIL",
         "detail": mem_rows,
     })
+    # D5 — cost: tokens per full run and model calls per request
+    eligible = [s for s in sessions
+                if datetime.fromisoformat(s.get("started", "1970-01-01T00:00:00+00:00"))
+                > datetime.fromisoformat(D5_WRITTEN_AT)]
+    tokens, agent_ms, call_total, call_ok, call_misses = [], [], 0, 0, []
+    for s in eligible:
+        for ask, lines in _join(s):
+            call_total += 1
+            if len(lines) != 1:
+                call_misses.append(f"{ask['name']} r{ask['round']}: no log line")
+                continue
+            line = lines[0]
+            expected = EXPECTED_CALLS.get(ask["client_outcome"])
+            if expected is not None and line.get("model_calls") == expected:
+                call_ok += 1
+            else:
+                call_misses.append(f"{ask['name']} r{ask['round']}: "
+                                   f"{line.get('model_calls')} calls, outcome "
+                                   f"{ask['client_outcome']}")
+            if ask["client_outcome"] == "complete":
+                tokens.append((line.get("prompt_tokens") or 0)
+                              + (line.get("output_tokens") or 0))
+                if line.get("agent_ms") is not None:
+                    agent_ms.append(line["agent_ms"])
+    mean_tok = round(sum(tokens) / len(tokens), 1) if tokens else None
+    d5_ok = (len(eligible) >= 1 and mean_tok is not None
+             and mean_tok <= MEAN_TOKENS_PER_RUN_MAX and call_ok == call_total)
+    results.append({
+        "id": "D5", "name": "full run: mean ≤ 1,000 tokens; calls exactly 2 / 0",
+        "measured": (f"{len(eligible)} eligible session(s); mean {mean_tok} tokens "
+                     f"over {len(tokens)} full runs; calls as expected {call_ok} of "
+                     f"{call_total}") if eligible
+                    else "no sessions started after D5 was written",
+        "verdict": ("INCOMPLETE" if not eligible else "PASS" if d5_ok else "FAIL"),
+        "detail": ([f"tokens per full run: {sorted(tokens)}",
+                    f"mean agent_ms per full run: "
+                    f"{round(sum(agent_ms) / len(agent_ms)) if agent_ms else None}"]
+                   + (call_misses or ["every request had the expected call count"]))
+                  if eligible else [f"D5 counts sessions started after {D5_WRITTEN_AT}"],
+    })
     return results
 
 
@@ -294,7 +339,7 @@ def write_record(session: dict, label: str, started: datetime) -> Path:
         f.write(f"- Rounds: {session['rounds']}\n- Server commit: "
                 f"{session['stats'].get('commit')}\n- Raw data: `{js.name}`\n\n")
 
-        f.write("## Criteria D1–D4, this session alone\n\n")
+        f.write("## Criteria D1–D5, this session alone\n\n")
         f.write("The criteria are defined over 3 sessions. Score them together with "
                 "`python measure.py --score results/deploy_hosted_*.json`.\n\n")
         _write_scores(f, score([session]))
@@ -325,7 +370,7 @@ def write_record(session: dict, label: str, started: datetime) -> Path:
 
 def score_files(paths: list[str]) -> int:
     sessions = [json.loads(Path(p).read_text(encoding="utf-8")) for p in paths]
-    print(f"Scoring {len(sessions)} session(s) against criteria.md D1–D4:\n")
+    print(f"Scoring {len(sessions)} session(s) against criteria.md D1–D5:\n")
     for s in sessions:
         print(f"  {s.get('started')}  {s.get('url')}")
     print()

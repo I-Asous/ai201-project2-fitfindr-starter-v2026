@@ -206,6 +206,10 @@ writes. The sessions are defined up front, so the denominators can't drift:
   wardrobe), 3 have no match and 3 are bad requests.
 - Across all 3 sessions: 3 cold starts, **45 `/ask` requests**, 27 full runs.
 
+D1–D4 were committed before any scored session. D5 was added afterwards
+(see its note), so it is scored only on sessions that started after it was
+committed.
+
 "Warm" means any `/ask` whose log line has `nth_since_boot` > 1, so it is not
 the first request the process served. "Cold confirmed" means the session's
 first `/ask` has `nth_since_boot` = 1, which proves the instance really
@@ -315,3 +319,46 @@ subprocesses, from running at once. If the lock ever failed, a second copy
 of the work would still fit under 512 MB rather than getting the instance
 OOM-killed. The children figure is the largest single MCP subprocess, not a
 sum. That's correct here because the lock means only one runs at a time.
+
+---
+
+## D5. One full run costs two model calls and under 1,000 tokens
+
+Across the full runs in 3 sessions, the mean `prompt_tokens + output_tokens`
+per run is **≤ 1,000**. Also, every full run makes **exactly 2** model calls
+and every no-match or bad request makes **0**, judged by the `model_calls`
+field in each request's log line. That means **45 of 45** requests have the
+expected call count.
+
+**Why this target:**
+
+This is the cost number, measured per request on the deployment. It comes
+from the service's own token counts in `request_log.py`, not from a pricing
+page. A full run is two model calls, `suggest_outfit` and `create_fit_card`.
+The prompts are fixed: the listing, the 10-item wardrobe, and the outfit text
+handed on to the fit card. So prompt tokens hardly move, and nearly all the
+variation is output length at temperature 0.9. Unscored local runs and the
+unscored trial session came in at roughly 650–950 tokens per full run. The
+empty-wardrobe runs are the cheap end. 1,000 is the mean those runs suggest
+with a little room for longer outputs, so it is not a free pass. If the mean
+goes over, the prompts or outputs have grown.
+
+The call count is 45 of 45 because `generate.py` counts every attempt,
+including retries. A 429 that gets retried shows up as a third call on a
+full run. On Render there is one process and `generate.py` paces itself at
+15 a minute, so the service should never push back. A run with 3 calls means
+paying for a call that the pacing was supposed to prevent. A no-match run
+with any model call means the branch leaked. Both are bugs, not noise.
+
+How cost is turned into money for the README: tokens × the model's published
+per-token price. Compute time is reported alongside, as the mean `agent_ms`
+per full run.
+
+> **Added after sessions had run:** D1–D4 and the session plan were committed
+> first (`8dae3c2`). The brief asks for five criteria and I had four, so D5
+> was written at 2026-11-12T03:56Z, after four hosted sessions had been
+> recorded, **without opening those session records**. To keep D5 a
+> before-the-results criterion, `measure.py` scores it only on sessions that
+> **started after D5 was committed**. The earlier sessions don't count toward
+> its 3.
+
