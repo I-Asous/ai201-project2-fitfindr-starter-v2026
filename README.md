@@ -829,14 +829,107 @@ https://fitfindr-ha9z.onrender.com**
 
 ## Unit 9 — Run Log, Before
 
-<!-- Filled from results/deploy_before_*.md once all three sessions are in:
-     the --score table, and at least ten structured log entries pasted as
-     text. -->
+Three sessions against https://fitfindr-ha9z.onrender.com, each started
+after at least 20 idle minutes, each `python measure.py --url ... --rounds 3
+--label before` (1 `/health` + 15 `/ask`). Deployed commit: `abbab8a`, start
+command `gunicorn serve:app --workers 1 --timeout 300`. Full records:
+`results/deploy_before_*.md`. Scored with `python measure.py --score
+results/deploy_before_*.json`, saved as `results/score_before.txt`.
+
+| Session (UTC) | `/health` (wake) | What happened to the 15 `/ask` requests |
+|---|---|---|
+| 15:29:49 | 200 in 42.8 s | #1 `complete` in 22.0 s. #2 hung 66.8 s → **502**. #3–#15 all **502** in < 1 s (including `bad_request`, which never reaches the agent) |
+| 15:55:00 | 200 in 32.5 s | #1 `complete` in 41.6 s. #2 → **502** after 27.5 s. #3–#15 all **502** |
+| 16:20:00 | 200 in 22.3 s | #1, #2 `model_unavailable` (17.2 s, 5.0 s). #3 `no_match` (4.5 s). #4 → **502** after 22.4 s. #5–#15 all **502** |
+
+Each time the 502s began, Render answered with `x-render-routing: no-deploy`,
+meaning no instance was running at all. A minute later the service came back
+on its own with a new `boot_id` and an empty `/stats`. That pattern is the
+instance being killed and restarted, not the app returning errors.
+
+| Criterion | Target | Measured (3 sessions) | Verdict |
+|---|---|---|---|
+| D1 cold start | `/health` ≤ 60 s, proven cold, 3 of 3 | 42.8 / 32.5 / 22.3 s, but **cold proof lost** (no log lines survived) | **Missed: unprovable** |
+| D2 warm latency | p50 ≤ 8 s, p95 ≤ 75 s, 0 × 5xx | **0 warm full runs**, **40 of 45** requests 5xx | **Missed** |
+| D3 one truthful log line | 45 of 45 | **0 of 45** | **Missed** |
+| D4 memory | ≤ 256 MB, 3 of 3 | nothing to read: logs and `/stats` died with the instance | **Missed: unmeasurable** |
+| D5 cost | mean ≤ 1,000 tokens; calls 45 of 45 | 0 full runs logged; **0 of 45** | **Missed** |
+
+**Structured log extract.** The before set has none to show: every line died
+with its instance. These 12 lines are from trial session
+`deploy_hosted_2026-11-12_033045`. That session was proven cold (uptime 21.6 s
+at the first `/ask`, 40.3 s into the session), survived all 15 requests, and
+isn't scored. It shows exactly what each scored session should have
+returned:
+
+```jsonl
+{"ts": "2026-11-12T03:31:25.497+00:00", "request_id": "34bf3e9b12a1", "boot_id": "9c9f46cc", "nth_since_boot": 1, "uptime_s": 21.6, "route": "/ask", "status": 200, "outcome": "complete", "query": "vintage graphic tee under $30", "parsed": {"description": "vintage graphic tee", "size": null, "max_price": 30.0}, "item_id": "lst_006", "steps": ["parse_query", "search_listings", "select_item", "suggest_outfit", "create_fit_card"], "wardrobe_items": 10, "queue_ms": 0.0, "agent_ms": 17259.2, "total_ms": 17260.6, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 721, "output_tokens": 141, "model_calls_since_boot": 2, "error": null, "peak_rss_mb": 95.9, "children_peak_rss_mb": 58.4}
+{"ts": "2026-11-12T03:31:31.989+00:00", "request_id": "736406e3e581", "boot_id": "9c9f46cc", "nth_since_boot": 2, "uptime_s": 28.1, "route": "/ask", "status": 200, "outcome": "complete", "query": "90s track jacket in size M", "parsed": {"description": "90s track jacket", "size": "M", "max_price": null}, "item_id": "lst_004", "steps": ["parse_query", "search_listings", "select_item", "suggest_outfit", "create_fit_card"], "wardrobe_items": 10, "queue_ms": 0.0, "agent_ms": 6313.9, "total_ms": 6314.2, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 779, "output_tokens": 199, "model_calls_since_boot": 4, "error": null, "peak_rss_mb": 96.1, "children_peak_rss_mb": 95.9}
+{"ts": "2026-11-12T03:31:36.586+00:00", "request_id": "74e3f0ab7082", "boot_id": "9c9f46cc", "nth_since_boot": 3, "uptime_s": 32.7, "route": "/ask", "status": 200, "outcome": "no_match", "query": "designer ballgown size XXS under $5", "parsed": {"description": "designer ballgown", "size": "XXS", "max_price": 5.0}, "item_id": null, "steps": ["parse_query", "search_listings"], "wardrobe_items": 10, "queue_ms": 0.0, "agent_ms": 4434.4, "total_ms": 4434.6, "model_calls": 0, "cache_hits": 0, "prompt_tokens": 0, "output_tokens": 0, "model_calls_since_boot": 4, "error": "No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'.", "peak_rss_mb": 96.1, "children_peak_rss_mb": 96.1}
+{"ts": "2026-11-12T03:31:43.922+00:00", "request_id": "c956740fe3c3", "boot_id": "9c9f46cc", "nth_since_boot": 4, "uptime_s": 40.0, "route": "/ask", "status": 200, "outcome": "complete", "query": "vintage graphic tee under $30", "parsed": {"description": "vintage graphic tee", "size": null, "max_price": 30.0}, "item_id": "lst_006", "steps": ["parse_query", "search_listings", "select_item", "suggest_outfit", "create_fit_card"], "wardrobe_items": 0, "queue_ms": 0.0, "agent_ms": 7004.7, "total_ms": 7004.8, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 503, "output_tokens": 155, "model_calls_since_boot": 6, "error": null, "peak_rss_mb": 96.1, "children_peak_rss_mb": 96.1}
+{"ts": "2026-11-12T03:31:44.088+00:00", "request_id": "159e4b137a33", "boot_id": "9c9f46cc", "nth_since_boot": 5, "uptime_s": 40.2, "route": "/ask", "status": 400, "outcome": "bad_request", "total_ms": 0.1, "peak_rss_mb": 96.1, "children_peak_rss_mb": 96.1}
+{"ts": "2026-11-12T03:31:49.987+00:00", "request_id": "50a0acbe7363", "boot_id": "9c9f46cc", "nth_since_boot": 6, "uptime_s": 46.1, "route": "/ask", "status": 200, "outcome": "complete", "query": "vintage graphic tee under $30", "parsed": {"description": "vintage graphic tee", "size": null, "max_price": 30.0}, "item_id": "lst_006", "steps": ["parse_query", "search_listings", "select_item", "suggest_outfit", "create_fit_card"], "wardrobe_items": 10, "queue_ms": 0.0, "agent_ms": 5740.9, "total_ms": 5741.1, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 757, "output_tokens": 179, "model_calls_since_boot": 8, "error": null, "peak_rss_mb": 96.2, "children_peak_rss_mb": 96.1}
+{"ts": "2026-11-12T03:31:56.351+00:00", "request_id": "303d9204d179", "boot_id": "9c9f46cc", "nth_since_boot": 7, "uptime_s": 52.5, "route": "/ask", "status": 200, "outcome": "complete", "query": "90s track jacket in size M", "parsed": {"description": "90s track jacket", "size": "M", "max_price": null}, "item_id": "lst_004", "steps": ["parse_query", "search_listings", "select_item", "suggest_outfit", "create_fit_card"], "wardrobe_items": 10, "queue_ms": 0.0, "agent_ms": 6028.6, "total_ms": 6028.9, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 743, "output_tokens": 157, "model_calls_since_boot": 10, "error": null, "peak_rss_mb": 96.2, "children_peak_rss_mb": 96.2}
+{"ts": "2026-11-12T03:32:00.699+00:00", "request_id": "459c1edd70ed", "boot_id": "9c9f46cc", "nth_since_boot": 8, "uptime_s": 56.8, "route": "/ask", "status": 200, "outcome": "no_match", "query": "designer ballgown size XXS under $5", "parsed": {"description": "designer ballgown", "size": "XXS", "max_price": 5.0}, "item_id": null, "steps": ["parse_query", "search_listings"], "wardrobe_items": 10, "queue_ms": 0.0, "agent_ms": 4015.1, "total_ms": 4015.5, "model_calls": 0, "cache_hits": 0, "prompt_tokens": 0, "output_tokens": 0, "model_calls_since_boot": 10, "error": "No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'.", "peak_rss_mb": 96.2, "children_peak_rss_mb": 96.2}
+{"ts": "2026-11-12T03:32:07.566+00:00", "request_id": "027af7dcde2c", "boot_id": "9c9f46cc", "nth_since_boot": 9, "uptime_s": 63.7, "route": "/ask", "status": 200, "outcome": "complete", "query": "vintage graphic tee under $30", "parsed": {"description": "vintage graphic tee", "size": null, "max_price": 30.0}, "item_id": "lst_006", "steps": ["parse_query", "search_listings", "select_item", "suggest_outfit", "create_fit_card"], "wardrobe_items": 0, "queue_ms": 0.0, "agent_ms": 6707.1, "total_ms": 6707.2, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 523, "output_tokens": 181, "model_calls_since_boot": 12, "error": null, "peak_rss_mb": 96.3, "children_peak_rss_mb": 96.2}
+{"ts": "2026-11-12T03:32:07.747+00:00", "request_id": "d5d24f31f828", "boot_id": "9c9f46cc", "nth_since_boot": 10, "uptime_s": 63.9, "route": "/ask", "status": 400, "outcome": "bad_request", "total_ms": 0.1, "peak_rss_mb": 96.3, "children_peak_rss_mb": 96.2}
+{"ts": "2026-11-12T03:32:13.076+00:00", "request_id": "8dbde5710951", "boot_id": "9c9f46cc", "nth_since_boot": 11, "uptime_s": 69.2, "route": "/ask", "status": 200, "outcome": "complete", "query": "vintage graphic tee under $30", "parsed": {"description": "vintage graphic tee", "size": null, "max_price": 30.0}, "item_id": "lst_006", "steps": ["parse_query", "search_listings", "select_item", "suggest_outfit", "create_fit_card"], "wardrobe_items": 10, "queue_ms": 0.0, "agent_ms": 5078.6, "total_ms": 5078.9, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 723, "output_tokens": 138, "model_calls_since_boot": 14, "error": null, "peak_rss_mb": 96.4, "children_peak_rss_mb": 96.3}
+{"ts": "2026-11-12T03:32:24.581+00:00", "request_id": "264058759873", "boot_id": "9c9f46cc", "nth_since_boot": 12, "uptime_s": 80.7, "route": "/ask", "status": 200, "outcome": "complete", "query": "90s track jacket in size M", "parsed": {"description": "90s track jacket", "size": "M", "max_price": null}, "item_id": "lst_004", "steps": ["parse_query", "search_listings", "select_item", "suggest_outfit", "create_fit_card"], "wardrobe_items": 10, "queue_ms": 0.0, "agent_ms": 11221.4, "total_ms": 11221.8, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 754, "output_tokens": 168, "model_calls_since_boot": 16, "error": null, "peak_rss_mb": 96.4, "children_peak_rss_mb": 96.4}
+```
 
 ## Unit 9 — Verdicts and Diagnoses
 
-<!-- Met or missed for D1–D5, and for every miss, the part of the system
-     and the mechanism. -->
+All five missed, and **one cause sits under all five**: the instance was
+killed mid-session every time, taking its in-memory log with it.
+
+**The mechanism: `/health` can't answer while an `/ask` runs.** The place is
+the start command in `render.yaml`, `gunicorn serve:app --workers 1`, which
+gives one **sync** worker. A sync worker handles exactly one HTTP request at
+a time, `/health` included. Render's health check (`healthCheckPath:
+/health`) joins the same line as `measure.py`'s requests. While an `/ask`
+runs, the check waits behind it. `measure.py` sends the next `/ask` as soon
+as the last one returns, so the worker is almost never free. When enough
+checks time out in a row, Render decides the instance is dead and replaces
+it.
+
+Evidence:
+
+- **Measured locally with the same start command:** `/health` took **0.004 s**
+  when idle and **2.94 s** when sent during an `/ask`. It returned only once
+  the run finished.
+- **The failure scales with run length.** Today's runs were slow (17–42 s
+  each) and the instance died after only 1–3 of them. Last night's trial
+  sessions had 5–7 s runs. One survived all 15 requests, and two died later
+  in the session (4 and 1 × 5xx). Longer runs mean longer stretches with
+  every health check stuck in line.
+- **Memory doesn't fit.** In every session where logs survived, peak memory
+  was a flat ~96 MB server + ~96 MB MCP child. That's ~192 MB even counted
+  twice, under 40% of 512 MB, and not growing request to request.
+- **Not yet confirmed from Render's side.** Render's Events page should say
+  whether each restart was a failed health check or an out-of-memory kill.
+
+Per criterion:
+
+- **D1 (missed, unprovable).** All three wake-ups were under 60 s
+  (22–43 s), so the target itself was probably met. But the proof that the
+  instance woke from sleep lives in the log, and the log died. A cold start I
+  can't prove isn't a pass.
+- **D2 (missed).** 40 of 45 requests got 502 from Render's proxy, because the
+  instance behind it was gone. No run survived long enough to be "warm".
+- **D3 (missed, 0 of 45).** The log is in-process memory plus a file on the
+  instance's disk. Both go when Render replaces the instance, so a crash
+  erases the record of the crash. This is the exact failure D3 was written
+  to catch. The few lines written before each crash existed briefly, but
+  `/logs` is only read at the end of a session, by which point they were
+  gone.
+- **D4 (missed, unmeasurable).** The memory numbers come from the same log
+  and `/stats`, so they died too. The trial sessions suggest ~192 MB, which
+  would pass, but that isn't this result set.
+- **D5 (missed, 0 of 45).** Same cause: no log line, no token count. The two
+  `model_unavailable` runs in session 3 are a second, separate problem. The
+  model call failed, and `measure.py` cut the error at 70 characters, so the
+  reason is lost (now fixed to keep 400). The trial logs above put a full run
+  at 658–978 tokens, but those aren't scored.
 
 ## Unit 9 — Cost of One Run
 
