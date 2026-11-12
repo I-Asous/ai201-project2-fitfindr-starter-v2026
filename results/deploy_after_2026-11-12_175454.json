@@ -1,0 +1,167 @@
+{
+  "url": "https://fitfindr-ha9z.onrender.com",
+  "rounds": 3,
+  "health": {
+    "status": null,
+    "client_ms": 15.9
+  },
+  "first_ask_elapsed_s": 0.0,
+  "asks": [
+    {
+      "round": 1,
+      "name": "match",
+      "status": null,
+      "client_ms": 0.9,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 1,
+      "name": "match_size",
+      "status": null,
+      "client_ms": 0.8,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 1,
+      "name": "no_match",
+      "status": null,
+      "client_ms": 0.6,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 1,
+      "name": "empty_wardrobe",
+      "status": null,
+      "client_ms": 0.6,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 1,
+      "name": "bad_request",
+      "status": null,
+      "client_ms": 0.6,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "match",
+      "status": null,
+      "client_ms": 0.7,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "match_size",
+      "status": null,
+      "client_ms": 0.6,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "no_match",
+      "status": null,
+      "client_ms": 0.7,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "empty_wardrobe",
+      "status": null,
+      "client_ms": 0.6,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "bad_request",
+      "status": null,
+      "client_ms": 0.6,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "match",
+      "status": null,
+      "client_ms": 0.6,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "match_size",
+      "status": null,
+      "client_ms": 0.6,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "no_match",
+      "status": null,
+      "client_ms": 0.6,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "empty_wardrobe",
+      "status": null,
+      "client_ms": 0.6,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "bad_request",
+      "status": null,
+      "client_ms": 0.6,
+      "server_agent_ms": null,
+      "client_outcome": "no_response",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "request_id": null
+    }
+  ],
+  "stats": {
+    "unavailable": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>"
+  },
+  "logs": [],
+  "label": "after",
+  "started": "2026-11-12T17:54:54+00:00"
+}
