@@ -220,6 +220,18 @@ a re-run, so the set stays three cold sessions. The earlier
 committed and are not scored. The "after" set (Milestone 6) follows the same
 rule with `--label after`.
 
+> **Clarified after before-session 1, before session 2:** the NOT COLD
+> replacement rule is for sessions where the instance was **awake**. It does
+> not cover sessions where the instance **crashed** and took its logs with
+> it. Before-session 1 (`deploy_before_2026-11-12_152949`) woke the
+> instance: `/health` took 42.8 s, against ~0.4 s when warm. Then the
+> instance went down mid-session. All 14 of its remaining requests returned
+> 502, and Render restarted it at 15:32:13 UTC. With the logs gone,
+> `measure.py` can't prove the cold start and marks it NOT COLD. Replacing
+> it would quietly drop a crash from the results, so **it stays in the
+> scored set**. Its D1 is reported as unprovable, and its misses count
+> against D2–D5. This can only make the results worse, not better.
+
 "Warm" means any `/ask` whose log line has `nth_since_boot` > 1, so it is not
 the first request the process served. "Cold confirmed" means the session's
 first `/ask` has `nth_since_boot` = 1, which proves the instance really
