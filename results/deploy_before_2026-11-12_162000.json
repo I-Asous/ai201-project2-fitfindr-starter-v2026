@@ -1,0 +1,167 @@
+{
+  "url": "https://fitfindr-ha9z.onrender.com",
+  "rounds": 3,
+  "health": {
+    "status": 200,
+    "client_ms": 22283.0
+  },
+  "first_ask_elapsed_s": 39.5,
+  "asks": [
+    {
+      "round": 1,
+      "name": "match",
+      "status": 200,
+      "client_ms": 17199.0,
+      "server_agent_ms": 16955.1,
+      "client_outcome": "model_unavailable",
+      "detail": "Found Graphic Tee — 2003 Tour Bootleg Style ($24 on depop), but it cou",
+      "request_id": "23e55d36cd53"
+    },
+    {
+      "round": 1,
+      "name": "match_size",
+      "status": 200,
+      "client_ms": 5021.5,
+      "server_agent_ms": 4730.9,
+      "client_outcome": "model_unavailable",
+      "detail": "Found 90s Track Jacket — Navy/White Stripe ($45 on poshmark), but it c",
+      "request_id": "50557adf6263"
+    },
+    {
+      "round": 1,
+      "name": "no_match",
+      "status": 200,
+      "client_ms": 4457.9,
+      "server_agent_ms": 4126.4,
+      "client_outcome": "no_match",
+      "detail": "No listings matched 'designer ballgown' in size XXS under $5. Try drop",
+      "request_id": "374a98fa34f7"
+    },
+    {
+      "round": 1,
+      "name": "empty_wardrobe",
+      "status": 502,
+      "client_ms": 22370.1,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "",
+      "request_id": null
+    },
+    {
+      "round": 1,
+      "name": "bad_request",
+      "status": 502,
+      "client_ms": 336.8,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "match",
+      "status": 502,
+      "client_ms": 242.8,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "match_size",
+      "status": 502,
+      "client_ms": 303.3,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "no_match",
+      "status": 502,
+      "client_ms": 211.0,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "empty_wardrobe",
+      "status": 502,
+      "client_ms": 814.5,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 2,
+      "name": "bad_request",
+      "status": 502,
+      "client_ms": 195.4,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "match",
+      "status": 502,
+      "client_ms": 165.6,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "match_size",
+      "status": 502,
+      "client_ms": 683.3,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "no_match",
+      "status": 502,
+      "client_ms": 171.4,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "empty_wardrobe",
+      "status": 502,
+      "client_ms": 536.5,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    },
+    {
+      "round": 3,
+      "name": "bad_request",
+      "status": 502,
+      "client_ms": 190.2,
+      "server_agent_ms": null,
+      "client_outcome": "server_error",
+      "detail": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n ",
+      "request_id": null
+    }
+  ],
+  "stats": {
+    "unavailable": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <title>502</title>\n    <style>@font-face {\n  font-family: \"Roobert\";\n  font-weight: 500;\n  font-style: normal;\n  font-stretch: normal;\n  src: url(\"data:fo"
+  },
+  "logs": [],
+  "label": "before",
+  "started": "2026-11-12T16:20:00+00:00"
+}
