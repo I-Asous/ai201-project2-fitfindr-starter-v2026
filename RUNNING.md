@@ -174,6 +174,24 @@ exist; see the top of this file):
 AI201_CACHE=0 gunicorn serve:app --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:5000
 ```
 
+**Tested from a clean checkout** on 2026-11-12 at commit `7a1412f`. A fresh
+`git clone` from GitHub, a new Python 3.13.0 venv, `pip install -r
+requirements.txt` (it installed exactly the versions above), then `.env`.
+Then:
+
+```text
+$ python test.py
+10 passed, 0 failed, 0 to look at, 0 skipped
+$ AI201_CACHE=0 gunicorn serve:app --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:5060
+[INFO] Starting gunicorn 23.0.0
+[INFO] Listening at: http://0.0.0.0:5060
+[INFO] Using worker: gthread
+$ curl localhost:5060/health
+{"status":"ok"}
+$ curl -X POST localhost:5060/ask -d '{"query": "designer ballgown size XXS under $5"}' ...
+steps ['parse_query', 'search_listings'], error "No listings matched 'designer ballgown' in size XXS under $5 ..."
+```
+
 **To deploy your own copy:**
 
 1. Push this repo to GitHub.
