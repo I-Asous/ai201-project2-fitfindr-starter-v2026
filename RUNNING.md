@@ -152,7 +152,29 @@ gunicorn serve:app
 
 ### Deployed on Render
 
-Host: **Render**, free web service, built from [`render.yaml`](render.yaml).
+**Live URL: https://fitfindr-ha9z.onrender.com**. Try `/health`, `/stats`,
+or `POST /ask`. Host: **Render**, free web service (512 MB, 0.1 CPU, sleeps
+after ~15 min idle), Oregon region, built from [`render.yaml`](render.yaml).
+
+**What the environment needs:**
+
+| | |
+|---|---|
+| Python | **3.13.0**: `PYTHON_VERSION` in `render.yaml`, the same version used locally. 3.11–3.13 are supported; 3.14 is not |
+| Dependencies | [`requirements.txt`](requirements.txt), pinned with lower and upper bounds. The versions that ran: Flask 3.1.3, gunicorn 23.0.0, google-genai 1.75.0, mcp 1.30.0, python-dotenv 1.1.1 |
+| Model files | **None, 0 MB.** The model is called over the API (`gemini-3.5-flash-lite`); nothing is loaded locally |
+| Data | `data/listings.json` (18 KB, 40 listings) and `data/wardrobe_schema.json` (3 KB), committed |
+| Secrets | `GEMINI_API_KEY`: `.env` locally, Render's environment settings when hosted. Never in the repo |
+| Memory seen | ~35 MB at boot, ~100 MB for the server and ~60–100 MB for the MCP subprocess during a run. See `/stats` |
+
+**Same thing on your own machine** (one command once the venv and `.env`
+exist; see the top of this file):
+
+```bash
+AI201_CACHE=0 gunicorn serve:app --workers 1 --timeout 300 --bind 0.0.0.0:5000
+```
+
+**To deploy your own copy:**
 
 1. Push this repo to GitHub.
 2. In Render: **New → Blueprint**, pick this repo. Render reads `render.yaml`.

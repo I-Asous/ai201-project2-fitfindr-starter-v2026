@@ -777,6 +777,81 @@ This is the second after run. The first, `results/run_2026-10-04_2119_after.md`,
 - **The search has no notion of meaning.** "denim jacket under $50" returns seven listings including denim shorts and a track jacket, because each shares one word. The first result has been right in every run, and only the first is used, but nothing guarantees that.
 - **The Sample Run section is from before the improvement.** Its fit cards were produced by the earlier prompt, so re-running those commands now gives captions that open differently.
 
+<!-- ═══════════════════ UNIT 9 — DEPLOY AND INSTRUMENT ═══════════════════ -->
+
+## Unit 9 — The Extension
+
+**System extended:** FitFindr, the thrift-search agent from units 3 and 4.
+The agent itself is unchanged. `run_agent()`, the three tools, the MCP server
+and the prompts are exactly what unit 4 left.
+
+**Shape: A — deploy and instrument. Path A, hosted on Render:
+https://fitfindr-ha9z.onrender.com**
+
+**What's new:**
+
+- **A hosted run path.** [`render.yaml`](render.yaml) builds the service and
+  starts it with `gunicorn serve:app --workers 1 --timeout 300`. `serve.py`'s
+  `POST /ask` and `GET /health` are live on Render's free tier. Details and
+  the environment are in [RUNNING.md](RUNNING.md).
+- **A structured request log.** [`request_log.py`](request_log.py) writes one
+  JSON line per `/ask` with named fields. That covers when it happened, what
+  came in (`query`, `parsed`), what went out (`outcome`, `item_id`, `steps`,
+  `error`), and how long it took (`queue_ms`, `agent_ms`, `total_ms`). It also
+  records what it cost (`model_calls`, `prompt_tokens`, `output_tokens`) and
+  what it held (`peak_rss_mb`, `children_peak_rss_mb`). Each line carries a
+  `boot_id`, `nth_since_boot` and `uptime_s`, so a cold start shows up in the
+  data.
+- **Two routes that read the log back:** `GET /stats` (p50/p95, outcomes,
+  tokens, memory since boot) and `GET /logs` (the last 200 lines). On a free
+  host the log dies when the instance sleeps, so these routes are how it gets
+  out.
+- **A measurement client.** [`measure.py`](measure.py) times the cold start
+  from outside, which the server can't do. It runs a fixed set of queries
+  covering every exit from the loop and matches each response to its log line
+  by `X-Request-Id`. It scores the session against D1–D5 in
+  [criteria.md](criteria.md) and writes a committed record to `results/`.
+
+**Out of scope, decided up front:**
+
+- **No change to what the agent does.** No new tool, prompt, or parsing rule.
+  If a criterion misses because the agent is slow or wrong, the fix has to be
+  in how it's run, not in what it does.
+- **No failure hardening beyond what unit 4 built (that's shape B).** No new
+  retries, fallbacks or timeouts inside the agent.
+- **No persistent log storage.** The instance's disk is wiped on sleep. The
+  committed `results/deploy_*` files are the durable copy, by design, not a
+  database or log service.
+- **No concurrency.** One agent run at a time, as `serve.py` was built. A
+  second request waits its turn.
+- **No auth on `/stats` and `/logs`.** They expose queries and timings, never
+  wardrobe contents. Fine for a class demo, not for real users.
+
+## Unit 9 — Run Log, Before
+
+<!-- Filled from results/deploy_before_*.md once all three sessions are in:
+     the --score table, and at least ten structured log entries pasted as
+     text. -->
+
+## Unit 9 — Verdicts and Diagnoses
+
+<!-- Met or missed for D1–D5, and for every miss, the part of the system
+     and the mechanism. -->
+
+## Unit 9 — Cost of One Run
+
+<!-- Tokens per full run from the log (D5), converted with the model's
+     published price, plus mean agent_ms. Say how it was measured. -->
+
+## Unit 9 — The Improvement
+
+<!-- One change, the after sessions (--label after), and both result sets
+     side by side. -->
+
+## Unit 9 — What's Left
+
+<!-- What I'd do next, and why I stopped. -->
+
 <!-- ═════════════════════════════════════════════════════════════════════
 
      SUBMISSION CHECKLIST — unit 3
