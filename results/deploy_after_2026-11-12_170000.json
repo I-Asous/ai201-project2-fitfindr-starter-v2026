@@ -1,0 +1,657 @@
+{
+  "url": "https://fitfindr-ha9z.onrender.com",
+  "rounds": 3,
+  "health": {
+    "status": 200,
+    "client_ms": 22277.4
+  },
+  "first_ask_elapsed_s": 86.8,
+  "asks": [
+    {
+      "round": 1,
+      "name": "match",
+      "status": 200,
+      "client_ms": 64561.7,
+      "server_agent_ms": 64233.7,
+      "client_outcome": "model_unavailable",
+      "detail": "Found Graphic Tee — 2003 Tour Bootleg Style ($24 on depop), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a minute and try again.",
+      "request_id": "110a60619916"
+    },
+    {
+      "round": 1,
+      "name": "match_size",
+      "status": 200,
+      "client_ms": 30427.0,
+      "server_agent_ms": 30148.5,
+      "client_outcome": "model_unavailable",
+      "detail": "Found 90s Track Jacket — Navy/White Stripe ($45 on poshmark), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a minute and try again.",
+      "request_id": "9bd872daa385"
+    },
+    {
+      "round": 1,
+      "name": "no_match",
+      "status": 200,
+      "client_ms": 7304.6,
+      "server_agent_ms": 6918.0,
+      "client_outcome": "no_match",
+      "detail": "No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'.",
+      "request_id": "e7fe6c663c27"
+    },
+    {
+      "round": 1,
+      "name": "empty_wardrobe",
+      "status": 200,
+      "client_ms": 21215.7,
+      "server_agent_ms": 21035.7,
+      "client_outcome": "model_unavailable",
+      "detail": "Found Graphic Tee — 2003 Tour Bootleg Style ($24 on depop), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a minute and try again.",
+      "request_id": "dcc214690084"
+    },
+    {
+      "round": 1,
+      "name": "bad_request",
+      "status": 400,
+      "client_ms": 187.1,
+      "server_agent_ms": null,
+      "client_outcome": "bad_request",
+      "detail": "Send JSON with a 'query' field, e.g. {\"query\": \"vintage graphic tee under $30\"}",
+      "request_id": "c89d16f25300"
+    },
+    {
+      "round": 2,
+      "name": "match",
+      "status": 200,
+      "client_ms": 13798.9,
+      "server_agent_ms": 13647.0,
+      "client_outcome": "complete",
+      "detail": "fit card for lst_006",
+      "request_id": "7c57a7f89af2"
+    },
+    {
+      "round": 2,
+      "name": "match_size",
+      "status": 200,
+      "client_ms": 23742.2,
+      "server_agent_ms": 23561.6,
+      "client_outcome": "complete",
+      "detail": "fit card for lst_004",
+      "request_id": "f97a22c4b5cf"
+    },
+    {
+      "round": 2,
+      "name": "no_match",
+      "status": 200,
+      "client_ms": 4067.1,
+      "server_agent_ms": 3917.5,
+      "client_outcome": "no_match",
+      "detail": "No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'.",
+      "request_id": "e70b26f91d8e"
+    },
+    {
+      "round": 2,
+      "name": "empty_wardrobe",
+      "status": 200,
+      "client_ms": 23997.7,
+      "server_agent_ms": 23609.0,
+      "client_outcome": "model_unavailable",
+      "detail": "Found Graphic Tee — 2003 Tour Bootleg Style ($24 on depop), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a minute and try again.",
+      "request_id": "7abf175881e9"
+    },
+    {
+      "round": 2,
+      "name": "bad_request",
+      "status": 400,
+      "client_ms": 170.8,
+      "server_agent_ms": null,
+      "client_outcome": "bad_request",
+      "detail": "Send JSON with a 'query' field, e.g. {\"query\": \"vintage graphic tee under $30\"}",
+      "request_id": "00c81255578b"
+    },
+    {
+      "round": 3,
+      "name": "match",
+      "status": 200,
+      "client_ms": 6693.4,
+      "server_agent_ms": 6538.5,
+      "client_outcome": "model_unavailable",
+      "detail": "Found Graphic Tee — 2003 Tour Bootleg Style ($24 on depop), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a minute and try again.",
+      "request_id": "6f6c7a04604f"
+    },
+    {
+      "round": 3,
+      "name": "match_size",
+      "status": 200,
+      "client_ms": 16205.8,
+      "server_agent_ms": 15960.2,
+      "client_outcome": "model_unavailable",
+      "detail": "Found 90s Track Jacket — Navy/White Stripe ($45 on poshmark), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a minute and try again.",
+      "request_id": "22f1714ef893"
+    },
+    {
+      "round": 3,
+      "name": "no_match",
+      "status": 200,
+      "client_ms": 4172.8,
+      "server_agent_ms": 3884.0,
+      "client_outcome": "no_match",
+      "detail": "No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'.",
+      "request_id": "9975ef90d36b"
+    },
+    {
+      "round": 3,
+      "name": "empty_wardrobe",
+      "status": 200,
+      "client_ms": 32279.6,
+      "server_agent_ms": 31868.7,
+      "client_outcome": "model_unavailable",
+      "detail": "Found Graphic Tee — 2003 Tour Bootleg Style ($24 on depop), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a minute and try again.",
+      "request_id": "2accafb59552"
+    },
+    {
+      "round": 3,
+      "name": "bad_request",
+      "status": 400,
+      "client_ms": 178.3,
+      "server_agent_ms": null,
+      "client_outcome": "bad_request",
+      "detail": "Send JSON with a 'query' field, e.g. {\"query\": \"vintage graphic tee under $30\"}",
+      "request_id": "f3a7acea880a"
+    }
+  ],
+  "stats": {
+    "boot_id": "43fcc2c3",
+    "booted_at": "2026-11-12T17:00:15+00:00",
+    "uptime_s": 257.0,
+    "requests_seen": 15,
+    "outcomes": {
+      "model_unavailable": 7,
+      "no_match": 3,
+      "bad_request": 3,
+      "complete": 2
+    },
+    "status_codes": {
+      "200": 12,
+      "400": 3
+    },
+    "total_ms": {
+      "p50": 15960.6,
+      "p95": 31868.8,
+      "max": 64234.7
+    },
+    "agent_ms": {
+      "p50": 15960.2,
+      "p95": 31868.7
+    },
+    "agent_ms_complete_runs": {
+      "n": 2,
+      "mean": 18604.3
+    },
+    "model_calls": 13,
+    "cache_hits": 0,
+    "tokens": {
+      "prompt": 2353,
+      "output": 581
+    },
+    "session_budget": {
+      "used": 13,
+      "limit": 300
+    },
+    "peak_rss_mb": 116.7,
+    "children_peak_rss_mb": 116.7,
+    "commit": "7a1412f"
+  },
+  "logs": [
+    {
+      "ts": "2026-11-12T17:01:27.423+00:00",
+      "request_id": "110a60619916",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 1,
+      "uptime_s": 72.3,
+      "route": "/ask",
+      "status": 200,
+      "outcome": "model_unavailable",
+      "query": "vintage graphic tee under $30",
+      "parsed": {
+        "description": "vintage graphic tee",
+        "size": null,
+        "max_price": 30.0
+      },
+      "item_id": "lst_006",
+      "steps": [
+        "parse_query",
+        "search_listings",
+        "select_item",
+        "suggest_outfit"
+      ],
+      "wardrobe_items": 10,
+      "queue_ms": 0.0,
+      "agent_ms": 64233.7,
+      "total_ms": 64234.7,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 413,
+      "output_tokens": 121,
+      "model_calls_since_boot": 2,
+      "error": "Found Graphic Tee — 2003 Tour Bootleg Style ($24 on depop), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a minu…",
+      "peak_rss_mb": 116.6,
+      "children_peak_rss_mb": 66.1
+    },
+    {
+      "ts": "2026-11-12T17:01:57.862+00:00",
+      "request_id": "9bd872daa385",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 2,
+      "uptime_s": 102.8,
+      "route": "/ask",
+      "status": 200,
+      "outcome": "model_unavailable",
+      "query": "90s track jacket in size M",
+      "parsed": {
+        "description": "90s track jacket",
+        "size": "M",
+        "max_price": null
+      },
+      "item_id": "lst_004",
+      "steps": [
+        "parse_query",
+        "search_listings",
+        "select_item",
+        "suggest_outfit"
+      ],
+      "wardrobe_items": 10,
+      "queue_ms": 0.0,
+      "agent_ms": 30148.5,
+      "total_ms": 30148.9,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 412,
+      "output_tokens": 109,
+      "model_calls_since_boot": 4,
+      "error": "Found 90s Track Jacket — Navy/White Stripe ($45 on poshmark), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a mi…",
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.6
+    },
+    {
+      "ts": "2026-11-12T17:02:04.987+00:00",
+      "request_id": "e7fe6c663c27",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 3,
+      "uptime_s": 109.9,
+      "route": "/ask",
+      "status": 200,
+      "outcome": "no_match",
+      "query": "designer ballgown size XXS under $5",
+      "parsed": {
+        "description": "designer ballgown",
+        "size": "XXS",
+        "max_price": 5.0
+      },
+      "item_id": null,
+      "steps": [
+        "parse_query",
+        "search_listings"
+      ],
+      "wardrobe_items": 10,
+      "queue_ms": 0.0,
+      "agent_ms": 6918.0,
+      "total_ms": 6936.4,
+      "model_calls": 0,
+      "cache_hits": 0,
+      "prompt_tokens": 0,
+      "output_tokens": 0,
+      "model_calls_since_boot": 4,
+      "error": "No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'.",
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.7
+    },
+    {
+      "ts": "2026-11-12T17:02:26.389+00:00",
+      "request_id": "dcc214690084",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 4,
+      "uptime_s": 131.3,
+      "route": "/ask",
+      "status": 200,
+      "outcome": "model_unavailable",
+      "query": "vintage graphic tee under $30",
+      "parsed": {
+        "description": "vintage graphic tee",
+        "size": null,
+        "max_price": 30.0
+      },
+      "item_id": "lst_006",
+      "steps": [
+        "parse_query",
+        "search_listings",
+        "select_item"
+      ],
+      "wardrobe_items": 0,
+      "queue_ms": 0.0,
+      "agent_ms": 21035.7,
+      "total_ms": 21035.8,
+      "model_calls": 1,
+      "cache_hits": 0,
+      "prompt_tokens": 0,
+      "output_tokens": 0,
+      "model_calls_since_boot": 5,
+      "error": "Found Graphic Tee — 2003 Tour Bootleg Style ($24 on depop), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a minu…",
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.7
+    },
+    {
+      "ts": "2026-11-12T17:02:26.548+00:00",
+      "request_id": "c89d16f25300",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 5,
+      "uptime_s": 131.5,
+      "route": "/ask",
+      "status": 400,
+      "outcome": "bad_request",
+      "total_ms": 0.1,
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.7
+    },
+    {
+      "ts": "2026-11-12T17:02:40.374+00:00",
+      "request_id": "7c57a7f89af2",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 6,
+      "uptime_s": 145.3,
+      "route": "/ask",
+      "status": 200,
+      "outcome": "complete",
+      "query": "vintage graphic tee under $30",
+      "parsed": {
+        "description": "vintage graphic tee",
+        "size": null,
+        "max_price": 30.0
+      },
+      "item_id": "lst_006",
+      "steps": [
+        "parse_query",
+        "search_listings",
+        "select_item",
+        "suggest_outfit",
+        "create_fit_card"
+      ],
+      "wardrobe_items": 10,
+      "queue_ms": 0.0,
+      "agent_ms": 13647.0,
+      "total_ms": 13647.3,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 777,
+      "output_tokens": 189,
+      "model_calls_since_boot": 7,
+      "error": null,
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.7
+    },
+    {
+      "ts": "2026-11-12T17:03:04.113+00:00",
+      "request_id": "f97a22c4b5cf",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 7,
+      "uptime_s": 169.0,
+      "route": "/ask",
+      "status": 200,
+      "outcome": "complete",
+      "query": "90s track jacket in size M",
+      "parsed": {
+        "description": "90s track jacket",
+        "size": "M",
+        "max_price": null
+      },
+      "item_id": "lst_004",
+      "steps": [
+        "parse_query",
+        "search_listings",
+        "select_item",
+        "suggest_outfit",
+        "create_fit_card"
+      ],
+      "wardrobe_items": 10,
+      "queue_ms": 0.0,
+      "agent_ms": 23561.6,
+      "total_ms": 23561.8,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 751,
+      "output_tokens": 162,
+      "model_calls_since_boot": 9,
+      "error": null,
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.7
+    },
+    {
+      "ts": "2026-11-12T17:03:08.188+00:00",
+      "request_id": "e70b26f91d8e",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 8,
+      "uptime_s": 173.1,
+      "route": "/ask",
+      "status": 200,
+      "outcome": "no_match",
+      "query": "designer ballgown size XXS under $5",
+      "parsed": {
+        "description": "designer ballgown",
+        "size": "XXS",
+        "max_price": 5.0
+      },
+      "item_id": null,
+      "steps": [
+        "parse_query",
+        "search_listings"
+      ],
+      "wardrobe_items": 10,
+      "queue_ms": 0.0,
+      "agent_ms": 3917.5,
+      "total_ms": 3917.8,
+      "model_calls": 0,
+      "cache_hits": 0,
+      "prompt_tokens": 0,
+      "output_tokens": 0,
+      "model_calls_since_boot": 9,
+      "error": "No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'.",
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.7
+    },
+    {
+      "ts": "2026-11-12T17:03:32.108+00:00",
+      "request_id": "7abf175881e9",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 9,
+      "uptime_s": 197.0,
+      "route": "/ask",
+      "status": 200,
+      "outcome": "model_unavailable",
+      "query": "vintage graphic tee under $30",
+      "parsed": {
+        "description": "vintage graphic tee",
+        "size": null,
+        "max_price": 30.0
+      },
+      "item_id": "lst_006",
+      "steps": [
+        "parse_query",
+        "search_listings",
+        "select_item"
+      ],
+      "wardrobe_items": 0,
+      "queue_ms": 0.0,
+      "agent_ms": 23609.0,
+      "total_ms": 23609.1,
+      "model_calls": 1,
+      "cache_hits": 0,
+      "prompt_tokens": 0,
+      "output_tokens": 0,
+      "model_calls_since_boot": 10,
+      "error": "Found Graphic Tee — 2003 Tour Bootleg Style ($24 on depop), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a minu…",
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.7
+    },
+    {
+      "ts": "2026-11-12T17:03:32.344+00:00",
+      "request_id": "00c81255578b",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 10,
+      "uptime_s": 197.3,
+      "route": "/ask",
+      "status": 400,
+      "outcome": "bad_request",
+      "total_ms": 0.1,
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.7
+    },
+    {
+      "ts": "2026-11-12T17:03:39.047+00:00",
+      "request_id": "6f6c7a04604f",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 11,
+      "uptime_s": 204.0,
+      "route": "/ask",
+      "status": 200,
+      "outcome": "model_unavailable",
+      "query": "vintage graphic tee under $30",
+      "parsed": {
+        "description": "vintage graphic tee",
+        "size": null,
+        "max_price": 30.0
+      },
+      "item_id": "lst_006",
+      "steps": [
+        "parse_query",
+        "search_listings",
+        "select_item"
+      ],
+      "wardrobe_items": 10,
+      "queue_ms": 0.0,
+      "agent_ms": 6538.5,
+      "total_ms": 6538.8,
+      "model_calls": 1,
+      "cache_hits": 0,
+      "prompt_tokens": 0,
+      "output_tokens": 0,
+      "model_calls_since_boot": 11,
+      "error": "Found Graphic Tee — 2003 Tour Bootleg Style ($24 on depop), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a minu…",
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.7
+    },
+    {
+      "ts": "2026-11-12T17:03:55.191+00:00",
+      "request_id": "22f1714ef893",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 12,
+      "uptime_s": 220.1,
+      "route": "/ask",
+      "status": 200,
+      "outcome": "model_unavailable",
+      "query": "90s track jacket in size M",
+      "parsed": {
+        "description": "90s track jacket",
+        "size": "M",
+        "max_price": null
+      },
+      "item_id": "lst_004",
+      "steps": [
+        "parse_query",
+        "search_listings",
+        "select_item"
+      ],
+      "wardrobe_items": 10,
+      "queue_ms": 0.0,
+      "agent_ms": 15960.2,
+      "total_ms": 15960.6,
+      "model_calls": 1,
+      "cache_hits": 0,
+      "prompt_tokens": 0,
+      "output_tokens": 0,
+      "model_calls_since_boot": 12,
+      "error": "Found 90s Track Jacket — Navy/White Stripe ($45 on poshmark), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a mi…",
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.7
+    },
+    {
+      "ts": "2026-11-12T17:03:59.390+00:00",
+      "request_id": "9975ef90d36b",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 13,
+      "uptime_s": 224.3,
+      "route": "/ask",
+      "status": 200,
+      "outcome": "no_match",
+      "query": "designer ballgown size XXS under $5",
+      "parsed": {
+        "description": "designer ballgown",
+        "size": "XXS",
+        "max_price": 5.0
+      },
+      "item_id": null,
+      "steps": [
+        "parse_query",
+        "search_listings"
+      ],
+      "wardrobe_items": 10,
+      "queue_ms": 0.0,
+      "agent_ms": 3884.0,
+      "total_ms": 3884.3,
+      "model_calls": 0,
+      "cache_hits": 0,
+      "prompt_tokens": 0,
+      "output_tokens": 0,
+      "model_calls_since_boot": 12,
+      "error": "No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'.",
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.7
+    },
+    {
+      "ts": "2026-11-12T17:04:31.542+00:00",
+      "request_id": "2accafb59552",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 14,
+      "uptime_s": 256.5,
+      "route": "/ask",
+      "status": 200,
+      "outcome": "model_unavailable",
+      "query": "vintage graphic tee under $30",
+      "parsed": {
+        "description": "vintage graphic tee",
+        "size": null,
+        "max_price": 30.0
+      },
+      "item_id": "lst_006",
+      "steps": [
+        "parse_query",
+        "search_listings",
+        "select_item"
+      ],
+      "wardrobe_items": 0,
+      "queue_ms": 0.0,
+      "agent_ms": 31868.7,
+      "total_ms": 31868.8,
+      "model_calls": 1,
+      "cache_hits": 0,
+      "prompt_tokens": 0,
+      "output_tokens": 0,
+      "model_calls_since_boot": 13,
+      "error": "Found Graphic Tee — 2003 Tour Bootleg Style ($24 on depop), but it couldn't be styled. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'stat… Wait a minu…",
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.7
+    },
+    {
+      "ts": "2026-11-12T17:04:31.885+00:00",
+      "request_id": "f3a7acea880a",
+      "boot_id": "43fcc2c3",
+      "nth_since_boot": 15,
+      "uptime_s": 256.8,
+      "route": "/ask",
+      "status": 400,
+      "outcome": "bad_request",
+      "total_ms": 0.1,
+      "peak_rss_mb": 116.7,
+      "children_peak_rss_mb": 116.7
+    }
+  ],
+  "label": "after",
+  "started": "2026-11-12T17:00:00+00:00"
+}
